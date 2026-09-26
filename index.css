@@ -1,6 +1,8 @@
-@import "tailwindcss";
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
 
-@theme {
+:root {
   --font-sans: "Segoe UI", Inter, system-ui, sans-serif;
   --color-ink: #0f172a;
   --color-muted: #64748b;
