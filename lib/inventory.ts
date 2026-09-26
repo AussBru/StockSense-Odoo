@@ -275,29 +275,29 @@ export function statusClass(status: DocStatus | string): string {
     case 'draft':
       return 'bg-surface-2 text-fg'
     case 'waiting':
-      return 'bg-$1-100 text-$1-800 dark:bg-$1-500/20 dark:text-$1-300'
+      return 'bg-amber-100 text-amber-800 dark:bg-amber-500/20 dark:text-amber-300'
     case 'ready':
-      return 'bg-$1-100 text-$1-800 dark:bg-$1-500/20 dark:text-$1-300'
+      return 'bg-sky-100 text-sky-800 dark:bg-sky-500/20 dark:text-sky-300'
     case 'done':
     case 'received':
     case 'delivered':
     case 'active':
     case 'completed':
-      return 'bg-$1-100 text-$1-800 dark:bg-$1-500/20 dark:text-$1-300'
+      return 'bg-emerald-100 text-emerald-800 dark:bg-emerald-500/20 dark:text-emerald-300'
     case 'canceled':
     case 'inactive':
     case 'rejected':
-      return 'bg-$1-100 text-$1-800 dark:bg-$1-500/20 dark:text-$1-300'
+      return 'bg-rose-100 text-rose-800 dark:bg-rose-500/20 dark:text-rose-300'
     case 'sent':
     case 'confirmed':
     case 'reserved':
-      return 'bg-$1-100 text-$1-800 dark:bg-$1-500/20 dark:text-$1-300'
+      return 'bg-indigo-100 text-indigo-800 dark:bg-indigo-500/20 dark:text-indigo-300'
     case 'partial':
     case 'picking':
     case 'packed':
-      return 'bg-$1-100 text-$1-800 dark:bg-$1-500/20 dark:text-$1-300'
+      return 'bg-purple-100 text-purple-800 dark:bg-purple-500/20 dark:text-purple-300'
     case 'shipped':
-      return 'bg-$1-100 text-$1-800 dark:bg-$1-500/20 dark:text-$1-300'
+      return 'bg-blue-100 text-blue-800 dark:bg-blue-500/20 dark:text-blue-300'
     default:
       return 'bg-surface-2 text-fg'
   }
@@ -306,15 +306,15 @@ export function statusClass(status: DocStatus | string): string {
 export function typeClass(type: DocType | string): string {
   switch (type) {
     case 'receipt':
-      return 'bg-$1-50 text-$1-700 dark:bg-$1-500/15 dark:text-$1-300'
+      return 'bg-indigo-50 text-indigo-700 dark:bg-indigo-500/15 dark:text-indigo-300'
     case 'delivery':
-      return 'bg-$1-50 text-$1-700 dark:bg-$1-500/15 dark:text-$1-300'
+      return 'bg-fuchsia-50 text-fuchsia-700 dark:bg-fuchsia-500/15 dark:text-fuchsia-300'
     case 'internal':
-      return 'bg-$1-50 text-$1-800 dark:bg-$1-500/15 dark:text-$1-300'
+      return 'bg-cyan-50 text-cyan-800 dark:bg-cyan-500/15 dark:text-cyan-300'
     case 'adjustment':
-      return 'bg-$1-50 text-$1-800 dark:bg-$1-500/15 dark:text-$1-300'
+      return 'bg-orange-50 text-orange-800 dark:bg-orange-500/15 dark:text-orange-300'
     case 'return':
-      return 'bg-$1-50 text-$1-700 dark:bg-$1-500/15 dark:text-$1-300'
+      return 'bg-purple-50 text-purple-700 dark:bg-purple-500/15 dark:text-purple-300'
     default:
       return 'bg-surface-2 text-fg'
   }

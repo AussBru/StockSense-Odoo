@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { lazy, Suspense, useEffect, useMemo, useState } from 'react'
 import { NavLink, Navigate, Outlet, useLocation, useNavigate } from 'react-router-dom'
 import {
   ArrowLeftRight,
@@ -43,12 +43,35 @@ import type { Permission } from '../types'
 import { ThemeToggle } from './ThemeToggle'
 import { NotificationBell } from './NotificationBell'
 import { GlobalSearchModal } from './GlobalSearchModal'
+import BranchedMenu, { type BranchedMenuItem } from './BranchedMenu'
+
+// gsap is ~200 kB. Loaded lazily so it stays out of the main chunk and the
+// login page never pays for it.
+const AutoBentoSurfaces = lazy(() =>
+  import('./AutoBentoSurfaces').then((m) => ({ default: m.AutoBentoSurfaces })),
+)
+
+/** Sidebar sections, in render order. */
+const GROUP_ORDER = [
+  'Inventory',
+  'Warehouse Ops',
+  'Sales',
+  'Purchasing',
+  'Reports',
+  'Communications',
+  'Administration',
+  'Setting',
+] as const
+
+type NavGroup = (typeof GROUP_ORDER)[number]
+
+const GROUP_INDEX = new Map<NavGroup, number>(GROUP_ORDER.map((g, i) => [g, i]))
 
 interface NavItem {
   to: string
   label: string
   icon: any
-  group?: string
+  group: NavGroup
   permission?: Permission
 }
 
@@ -123,23 +146,74 @@ export function AppShell() {
 
   const isNavActive = (to: string) => {
     const [toPath, toQuery] = to.split('?')
+    const pathMatches =
+      location.pathname === toPath || location.pathname.startsWith(`${toPath}/`)
     if (toQuery) {
-      return location.pathname === toPath && location.search.includes(toQuery)
+      return pathMatches && location.search.includes(toQuery)
     }
     if (toPath === '/dashboard') {
       return location.pathname === '/dashboard'
     }
-    return location.pathname === toPath || location.pathname.startsWith(`${toPath}/`)
+    return pathMatches
   }
 
   // Filter nav items by user permissions
-  const accessibleNav = nav.filter((item) => {
-    if (!item.permission) return true
-    return hasPermission(currentUser, item.permission)
-  })
+  const accessibleNav = useMemo(() => {
+    return nav.filter((item) => {
+      if (!item.permission) return true
+      return hasPermission(currentUser, item.permission)
+    })
+  }, [currentUser])
+
+  const activeRoute = useMemo(
+    () => accessibleNav.find((item) => isNavActive(item.to))?.to ?? '',
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [location.pathname, location.search, accessibleNav],
+  )
+
+  const activeGroup = useMemo(
+    () => accessibleNav.find((item) => item.to === activeRoute)?.group,
+    [activeRoute, accessibleNav],
+  )
+
+  const [openGroups, setOpenGroups] = useState<NavGroup[]>(() => [...GROUP_ORDER])
+
+  useEffect(() => {
+    if (!activeGroup) return
+    setOpenGroups((prev) => (prev.includes(activeGroup) ? prev : [...prev, activeGroup]))
+  }, [activeGroup])
+
+  const menuItems = useMemo<BranchedMenuItem[]>(() => {
+    const iconFor = (item: NavItem) => {
+      const Icon = item.icon
+      return <Icon size={16} strokeWidth={1.8} />
+    }
+
+    return GROUP_ORDER.map((group) => ({
+      label: group,
+      children: accessibleNav
+        .filter((item) => item.group === group)
+        .map((item) => ({
+          value: item.to,
+          label: item.label,
+          icon: iconFor(item),
+          badge:
+            item.to === '/products' && alerts > 0 ? (
+              <span className="rounded-full bg-rose-500 px-1.5 text-[10px] font-bold text-white">
+                {alerts}
+              </span>
+            ) : undefined,
+        })),
+    })).filter((section) => section.children && section.children.length > 0)
+  }, [accessibleNav, alerts])
 
   return (
     <div className="flex min-h-svh bg-canvas">
+      {/* Adds the MagicBento hover treatment to every standard surface panel */}
+      <Suspense fallback={null}>
+        <AutoBentoSurfaces />
+      </Suspense>
+
       {/* Global Search Modal */}
       <GlobalSearchModal open={searchModalOpen} onClose={() => setSearchModalOpen(false)} />
 
@@ -155,37 +229,28 @@ export function AppShell() {
           </div>
         </div>
 
-        {/* Navigation list */}
-        <nav className="ss-scroll flex-1 space-y-1 overflow-y-auto px-3 py-3">
-          {accessibleNav.map((item, i) => {
-            const active = isNavActive(item.to)
-            const showGroup = item.group && accessibleNav[i - 1]?.group !== item.group
-            return (
-              <div key={item.to}>
-                {showGroup ? (
-                  <div className="mt-4 mb-1.5 px-3 text-[10px] font-semibold uppercase tracking-[0.16em] text-on-sidebar/40">
-                    {item.group}
-                  </div>
-                ) : null}
-                <NavLink
-                  to={item.to}
-                  className={`flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm transition ${
-                    active
-                      ? 'bg-on-sidebar/10 text-on-sidebar font-medium shadow-sm'
-                      : 'text-on-sidebar/60 hover:bg-on-sidebar/5 hover:text-on-sidebar'
-                  }`}
-                >
-                  <item.icon size={16} className={active ? 'text-accent' : 'text-on-sidebar/40'} />
-                  <span className="flex-1 truncate">{item.label}</span>
-                  {item.to === '/products' && alerts > 0 ? (
-                    <span className="rounded-full bg-rose-500 px-1.5 text-[10px] font-bold text-white">
-                      {alerts}
-                    </span>
-                  ) : null}
-                </NavLink>
-              </div>
-            )
-          })}
+        {/* Tree-structured Branched Menu */}
+        <nav className="ss-scroll flex-1 overflow-y-auto pb-4">
+          <BranchedMenu
+            items={menuItems}
+            className="branched-menu--fill"
+            active={activeRoute}
+            open={openGroups.map((g) => GROUP_INDEX.get(g) ?? -1).filter((i) => i >= 0)}
+            onToggle={(index, isOpen) => {
+              const group = GROUP_ORDER[index]
+              if (!group) return
+              setOpenGroups((prev) =>
+                isOpen ? (prev.includes(group) ? prev : [...prev, group]) : prev.filter((g) => g !== group),
+              )
+            }}
+            onSelect={(value) => navigate(value)}
+            width={256}
+            rowHeight={34}
+            indent={38}
+            trunk={12}
+            radius={9}
+            fontSize={13}
+          />
         </nav>
 
         {/* User profile footer */}

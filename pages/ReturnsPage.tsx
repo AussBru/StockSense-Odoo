@@ -213,8 +213,8 @@ export function ReturnsPage() {
                         <span
                           className={`rounded-full px-2 py-0.5 text-xs font-medium ${
                             ret.type === 'customer'
-                              ? 'bg-$1-50 text-$1-700 dark:bg-$1-500/15 dark:text-$1-300'
-                              : 'bg-$1-50 text-$1-800 dark:bg-$1-500/15 dark:text-$1-300'
+                              ? 'bg-purple-50 text-purple-700 dark:bg-purple-500/15 dark:text-purple-300'
+                              : 'bg-sky-50 text-sky-800 dark:bg-sky-500/15 dark:text-sky-300'
                           }`}
                         >
                           {ret.type === 'customer' ? 'Customer RMA' : 'Vendor Return'}

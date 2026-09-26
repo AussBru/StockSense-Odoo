@@ -14,7 +14,7 @@ The UI is an **ivory & black** theme with a full **dark mode**.
 | Frontend    | React 18, TypeScript 5.6, Vite 5                    |
 | Styling     | Tailwind CSS 3 (PostCSS + autoprefixer)             |
 | Routing     | react-router-dom 6                                   |
-| 3D / visual | three.js — the `ShapeBlur` WebGL backdrop           |
+| 3D / visual | three.js — the `ShapeBlur` WebGL backdrop; gsap — `MagicBento` surfaces |
 | Backend     | Express 5 (`server.js`) on port 5000                |
 | Mail        | nodemailer — delivers password-reset OTPs            |
 | State       | React Context (`StoreProvider`) + `localStorage`    |
@@ -73,6 +73,10 @@ components/
   AppShell.tsx        Sidebar, header, theme toggle, auth route guards
   AuthFrame.tsx       Split-screen auth layout + ShapeBlur backdrop
   ShapeBlur.tsx       WebGL blurred-shape component (React Bits)
+  MagicBento.tsx      Animated bento card grid (React Bits)
+  MagicBento.css      Bento styles, scoped to .bento-section / .bento-surface
+  bentoShared.ts      Shared gsap particle/ripple plumbing + interaction hook
+  AutoBentoSurfaces.tsx  Applies the bento treatment to all standard panels
   ThemeToggle.tsx     useTheme() hook + toggle button
   Operations.tsx      OperationList + OperationForm (shared by all doc types)
   Badges.tsx          StatusBadge / TypeBadge pills
@@ -188,6 +192,97 @@ Notes:
 - Cleanup disposes geometry, material and the WebGL context, and disconnects the
   `ResizeObserver` and pointer listeners.
 
+## MagicBento (animated surfaces)
+
+Two pieces, both built on `gsap`:
+
+| File                            | Role                                                            |
+| ------------------------------- | --------------------------------------------------------------- |
+| `components/bentoShared.ts`     | Shared particle/ripple/GSAP plumbing and the `useCardInteractions` hook |
+| `components/MagicBento.tsx`     | Card-grid component (data-driven, responsive)                    |
+| `components/MagicBento.css`     | Styles, scoped to `.bento-section` / `.bento-surface`            |
+| `components/AutoBentoSurfaces.tsx` | Applies the treatment to existing panels with no per-page edits |
+
+### 1. The card grid
+
+Used for the dashboard KPI row:
+
+```tsx
+<MagicBento
+  cards={kpiCards}
+  columns={5}
+  compact
+  enableTilt
+  enableMagnetism
+  clickEffect
+  spotlightRadius={260}
+  particleCount={10}
+/>
+```
+
+Each entry in `cards` accepts `label`, `title`, `description`, `value`, `icon`,
+`span: { col, row }`, `color`, `href`, and `onClick`. With no `cards` prop it falls back to the
+upstream placeholder set.
+
+Unlike upstream, `cards` is a prop (upstream hard-coded six placeholder cards, which made the
+component unusable for real data) and grid spans are data-driven, so any card count lays out
+correctly. Columns also collapse responsively — `--bento-cols-max` is the requested count and a
+media-query `--bento-cols-cap` wins on narrow viewports, instead of squeezing cards into slivers.
+
+### 2. Every other panel, automatically
+
+The app has ~90 panels sharing the surface classes, spread over 20 pages, so rather than
+wrapping each one, `AutoBentoSurfaces` (mounted once in `AppShell`) matches them by selector and
+wires them with a single delegated listener set:
+
+```
+:is(div, form, section, article).border.border-line.bg-surface[class*="rounded-"]
+```
+
+The radius is matched as a substring because the codebase has two conventions — older pages use
+`rounded-2xl`, newer ones `rounded-xl`. Matching is restricted to block containers so text inputs
+and selects, which also carry `border-line bg-surface`, are never decorated.
+
+That covers the stat cards, filter bars, data tables, warehouse/zone rows, and detail panels
+throughout the app with **zero per-page changes**.
+
+Behaviour differences from the grid, deliberately:
+
+- **Tilt and magnetism are off.** They transform the element, which makes text blurry and shifts
+  tables out from under the cursor. The grid still opts into them for KPI tiles.
+- **No global spotlight element.** Each panel gets a pointer-following border glow and a low-alpha
+  inner wash instead, which avoids stacking 800 px fixed overlays across ~90 panels.
+- Clicks on `button`, `a`, `input`, `select`, `textarea` and `[role="button"]` don't ripple.
+
+### Opting a panel out
+
+Add `data-bento="off"` to the panel or any ancestor:
+
+```tsx
+<div data-bento="off" className="rounded-xl border border-line bg-surface">
+  {/* no hover treatment */}
+</div>
+```
+
+### Props
+
+`MagicBento` keeps the upstream API — `textAutoHide`, `enableStars`, `enableSpotlight`,
+`enableBorderGlow`, `disableAnimations`, `spotlightRadius`, `particleCount`, `enableTilt`,
+`glowColor`, `clickEffect`, `enableMagnetism` — plus `cards`, `columns`, and `compact`.
+
+`glowColor` is RGB channels without an `rgba()` wrapper. It defaults to ivory
+(`242, 239, 230`), which reads on the dark canvas and degrades to a faint warm sheen on white.
+
+### Notes
+
+- Both components are **lazy-loaded**, so `gsap` (~200 kB) stays out of the main chunk. The
+  dashboard `Suspense` fallback reserves the same height to avoid layout shift.
+- Animations are skipped on viewports ≤768 px and when `prefers-reduced-motion: reduce` is set.
+- Every particle and ripple node GSAP creates is removed on mouse-out and unmount.
+- `overflow: hidden` is applied to auto-attached surfaces so particles clip to the panel. Native
+  `<select>` menus and tooltips are not affected, but a custom popover rendered *inside* a panel
+  would be clipped.
+
 ## Domain model
 
 ### Locations
@@ -235,6 +330,10 @@ location.reload()
   inside a `setState` updater, which React StrictMode may invoke more than once.
 - `AuthFrame.tsx` exports both components and the `inputClass` const, so Vite's Fast Refresh
   cannot hot-reload it and falls back to a full reload. Harmless in dev.
+- `ZonesPage.tsx` nests a `<button>` (the "Add Zone" button) inside the warehouse header `<button>`,
+  which React flags as invalid DOM nesting.
+- `AutoBentoSurfaces` sets `overflow: hidden` on matched panels; a custom popover rendered inside
+  one would be clipped. Use `data-bento="off"` on that panel.
 - The sidebar is a fixed `w-64` with no mobile drawer, so the layout is cramped below
   ~1024px.
 - `App.css` and `assets/{react.svg,vite.svg}` are unused leftovers from the Vite starter.

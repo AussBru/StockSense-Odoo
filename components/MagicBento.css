@@ -1,0 +1,327 @@
+/*
+ * MagicBento (React Bits) — themed for StockSense.
+ *
+ * Differences from the upstream stylesheet:
+ *  - Custom properties are scoped to `.bento-section` instead of a global
+ *    `:root` block, so nothing leaks into the rest of the app.
+ *  - Colors come from the project's semantic tokens, so the grid follows the
+ *    ivory/black light+dark theme.
+ *  - Grid spans are driven by `--span-col` / `--span-row` custom properties
+ *    instead of hard-coded `:nth-child()` rules, so any number of cards lays
+ *    out correctly.
+ */
+
+.bento-section {
+  --bento-glow: 242, 239, 230;
+  --bento-border: rgb(var(--c-line));
+  --bento-surface: rgb(var(--c-surface));
+  --bento-text: rgb(var(--c-fg));
+  --bento-muted: rgb(var(--c-fg-muted));
+  --bento-faint: rgb(var(--c-fg-subtle));
+
+  /*
+   * `--bento-cols-max` is set inline from the `columns` prop, while
+   * `--bento-cols-cap` is owned by the media queries below. The grid uses
+   * min() of the two so a large `columns` value still collapses gracefully on
+   * narrow viewports instead of squeezing cards into slivers.
+   */
+  --bento-cols-cap: 6;
+
+  position: relative;
+  user-select: none;
+  width: 100%;
+}
+
+@media (max-width: 1279px) {
+  .bento-section {
+    --bento-cols-cap: 4;
+  }
+}
+
+@media (max-width: 1023px) {
+  .bento-section {
+    --bento-cols-cap: 3;
+  }
+}
+
+@media (max-width: 767px) {
+  .bento-section {
+    --bento-cols-cap: 2;
+  }
+}
+
+@media (max-width: 479px) {
+  .bento-section {
+    --bento-cols-cap: 1;
+  }
+}
+
+.card-grid {
+  display: grid;
+  grid-template-columns: repeat(
+    min(var(--bento-cols-max, 4), var(--bento-cols-cap)),
+    minmax(0, 1fr)
+  );
+  gap: 0.75rem;
+  width: 100%;
+}
+
+.magic-bento-card {
+  --glow-x: 50%;
+  --glow-y: 50%;
+  --glow-intensity: 0;
+  --glow-radius: 200px;
+
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  position: relative;
+  grid-column: span var(--span-col, 1);
+  grid-row: span var(--span-row, 1);
+  min-height: 190px;
+  padding: 1.25rem;
+  border-radius: 20px;
+  border: 1px solid var(--bento-border);
+  background: var(--bento-surface);
+  color: var(--bento-text);
+  overflow: hidden;
+  transition: border-color 0.3s ease, box-shadow 0.3s ease;
+}
+
+/* Compact variant for dense KPI rows — no fixed aspect ratio. */
+.bento-section--compact .magic-bento-card {
+  min-height: 116px;
+  padding: 1rem 1.15rem;
+}
+
+.magic-bento-card:hover {
+  border-color: rgb(var(--c-fg) / 0.28);
+  box-shadow: 0 8px 25px rgb(0 0 0 / 0.12);
+}
+
+.dark .magic-bento-card:hover {
+  box-shadow: 0 8px 25px rgb(0 0 0 / 0.5);
+}
+
+.magic-bento-card__header,
+.magic-bento-card__content {
+  display: flex;
+  position: relative;
+  z-index: 2;
+}
+
+.magic-bento-card__header {
+  gap: 0.75rem;
+  align-items: flex-start;
+  justify-content: space-between;
+}
+
+.magic-bento-card__label {
+  font-size: 0.6875rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  color: var(--bento-faint);
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.magic-bento-card__title,
+.magic-bento-card__description {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.magic-bento-card__icon {
+  display: flex;
+  height: 2.25rem;
+  width: 2.25rem;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  border-radius: 0.75rem;
+  background: rgb(var(--c-surface-2));
+}
+
+.magic-bento-card__content {
+  flex-direction: column;
+  margin-top: 1rem;
+}
+
+.magic-bento-card__value {
+  font-size: 1.75rem;
+  font-weight: 600;
+  line-height: 1.1;
+  letter-spacing: -0.02em;
+}
+
+.magic-bento-card__label {
+  font-size: 0.6875rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  color: var(--bento-faint);
+}
+
+.magic-bento-card__title {
+  font-weight: 500;
+  font-size: 0.95rem;
+  margin: 0;
+}
+
+.magic-bento-card__description {
+  font-size: 0.75rem;
+  line-height: 1.35;
+  margin: 0.15rem 0 0;
+  color: var(--bento-muted);
+}
+
+.magic-bento-card--text-autohide .magic-bento-card__title,
+.magic-bento-card--text-autohide .magic-bento-card__description {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.magic-bento-card--text-autohide .magic-bento-card__title {
+  -webkit-line-clamp: var(--clamp-title, 1);
+  line-clamp: var(--clamp-title, 1);
+}
+
+.magic-bento-card--text-autohide .magic-bento-card__description {
+  -webkit-line-clamp: var(--clamp-desc, 2);
+  line-clamp: var(--clamp-desc, 2);
+}
+
+/* Border glow that tracks the cursor. */
+.magic-bento-card--border-glow::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  padding: 6px;
+  background: radial-gradient(
+    var(--glow-radius) circle at var(--glow-x) var(--glow-y),
+    rgba(var(--bento-glow), calc(var(--glow-intensity) * 0.55)) 0%,
+    rgba(var(--bento-glow), calc(var(--glow-intensity) * 0.22)) 30%,
+    transparent 60%
+  );
+  border-radius: inherit;
+  -webkit-mask:
+    linear-gradient(#fff 0 0) content-box,
+    linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask:
+    linear-gradient(#fff 0 0) content-box,
+    linear-gradient(#fff 0 0);
+  mask-composite: exclude;
+  pointer-events: none;
+  z-index: 1;
+  transition: opacity 0.3s ease;
+}
+
+/* Particles */
+.particle-container {
+  position: relative;
+  overflow: hidden;
+}
+
+.particle::before {
+  content: '';
+  position: absolute;
+  top: -2px;
+  left: -2px;
+  right: -2px;
+  bottom: -2px;
+  background: rgba(var(--bento-glow), 0.18);
+  border-radius: 50%;
+  z-index: -1;
+}
+
+/* Global spotlight */
+.global-spotlight {
+  mix-blend-mode: screen;
+  will-change: transform, opacity;
+  z-index: 200 !important;
+  pointer-events: none;
+}
+
+/*
+ * Auto-attached surfaces (see AutoBentoSurfaces). Any panel carrying the
+ * standard `rounded-2xl border border-line bg-surface` classes gets the
+ * pointer-following border glow and an inner wash, without per-page markup.
+ * Opt out with `data-bento="off"` on the panel or an ancestor.
+ */
+.bento-surface {
+  --glow-x: 50%;
+  --glow-y: 50%;
+  --glow-intensity: 0;
+  --glow-radius: 300px;
+
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  transition: border-color 0.3s ease, box-shadow 0.3s ease;
+}
+
+.bento-surface:hover {
+  border-color: rgb(var(--c-fg) / 0.22);
+}
+
+.dark .bento-surface:hover {
+  box-shadow: 0 8px 28px rgb(0 0 0 / 0.45);
+}
+
+/* Soft inner wash that tracks the pointer. Kept very low alpha so it never
+   hazes over the text it sits on. */
+.bento-surface::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  pointer-events: none;
+  opacity: var(--glow-intensity, 0);
+  background: radial-gradient(
+    340px circle at var(--glow-x, 50%) var(--glow-y, 50%),
+    rgba(var(--bento-glow, 242, 239, 230), 0.07),
+    transparent 65%
+  );
+  transition: opacity 0.25s ease;
+}
+
+/* Border glow ring, mirroring `.magic-bento-card--border-glow::after`. */
+.bento-surface::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  padding: 6px;
+  background: radial-gradient(
+    var(--glow-radius) circle at var(--glow-x) var(--glow-y),
+    rgba(var(--bento-glow, 242, 239, 230), calc(var(--glow-intensity, 0) * 0.5)) 0%,
+    rgba(var(--bento-glow, 242, 239, 230), calc(var(--glow-intensity, 0) * 0.2)) 30%,
+    transparent 60%
+  );
+  border-radius: inherit;
+  -webkit-mask:
+    linear-gradient(#fff 0 0) content-box,
+    linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask:
+    linear-gradient(#fff 0 0) content-box,
+    linear-gradient(#fff 0 0);
+  mask-composite: exclude;
+  pointer-events: none;
+  z-index: 4;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .magic-bento-card {
+    transition: none;
+  }
+
+  .bento-surface {
+    transition: none;
+  }
+}
