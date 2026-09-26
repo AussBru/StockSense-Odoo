@@ -1,342 +1,275 @@
 # StockSense IMS
 
-A modular **inventory management system** — an Odoo-inspired "Inventory OS" covering
-inventory core, sales, purchasing, returns, and reporting. Stock is modelled the way Odoo
-does it: a set of *quants* (product × location quantities) fed by *documents* and recorded
-in an append-only *stock ledger*.
+A modern, enterprise-ready **inventory management system** — an Odoo-inspired "Inventory OS" covering inventory core, warehouse operations, sales, purchasing, returns, enterprise administration, and deep intelligence reporting. Stock is modelled the way Odoo does it: a set of *quants* (product × location quantities) fed by *documents* and recorded in an append-only, tamper-evident *stock ledger*.
 
-The UI is an **ivory & black** theme with a full **dark mode**.
+The UI features a bespoke **ivory & black** aesthetic with full **dark mode**, interactive **MagicBento** surfaces, tree-folded **BranchedMenu** navigation, and a WebGL shader backdrop.
 
-## Stack
+---
 
-| Concern     | Choice                                              |
-| ----------- | --------------------------------------------------- |
-| Frontend    | React 18, TypeScript 5.6, Vite 5                    |
-| Styling     | Tailwind CSS 3 (PostCSS + autoprefixer)             |
-| Routing     | react-router-dom 6                                   |
-| 3D / visual | three.js — the `ShapeBlur` WebGL backdrop; gsap — `MagicBento` surfaces |
-| Backend     | Express 5 (`server.js`) on port 5000                |
-| Mail        | nodemailer — delivers password-reset OTPs            |
-| State       | React Context (`StoreProvider`) + `localStorage`    |
+## Technology Stack
 
-## Getting started
+| Concern         | Choice                                                                 |
+| --------------- | ---------------------------------------------------------------------- |
+| **Frontend**    | React 18, TypeScript 5.6, Vite 5                                       |
+| **Styling**     | Tailwind CSS 3 (PostCSS + autoprefixer) + semantic CSS variables       |
+| **Navigation**  | `react-router-dom` 6 with route-level and action-level permission guards |
+| **Motion & 3D** | `three.js` (WebGL `ShapeBlur` backdrop), `gsap` (`MagicBento` surfaces)|
+| **Icons**       | `lucide-react`, `@hugeicons/react`                                     |
+| **Backend API** | Express 5 (`server.js`) on port 5000                                   |
+| **Mailing**     | `nodemailer` — OTP password resets with live SMTP relay                |
+| **State & Data**| React Context (`StoreProvider`) + `localStorage` (`stocksense-v4`)    |
+
+---
+
+## Getting Started
+
+### 1. Installation
 
 ```bash
 npm install
+```
+
+### 2. Development Server
+
+```bash
 npm run dev
 ```
 
-`npm run dev` starts **both** processes via `concurrently`:
+`npm run dev` concurrently launches both processes:
 
-| Process | What                | Where                   |
-| ------- | ------------------- | ----------------------- |
-| `api`   | `node server.js`    | http://localhost:5000   |
-| `app`   | `vite --host`       | http://localhost:5173   |
+| Process | Service              | URL                     |
+| ------- | -------------------- | ----------------------- |
+| `api`   | `node server.js`     | `http://localhost:5000` |
+| `app`   | `vite --host 0.0.0.0`| `http://localhost:5173` |
 
-Vite proxies `/api` → `http://localhost:5000` (see `vite.config.ts`).
+Vite automatically proxies `/api` requests to `http://localhost:5000`.
 
-**Demo login:** `demo@stocksense.app` / `Demo@123`
+### 3. Build & Preview
 
-### Other scripts
+```bash
+npm run build      # tsc -b type-check + production bundle
+npm run preview    # Serve production dist locally
+```
 
-| Script            | Description                                    |
-| ----------------- | ---------------------------------------------- |
-| `npm run server`  | API only                                       |
-| `npm run client`  | Vite dev server only                           |
-| `npm run build`   | `tsc -b` type-check, then production build     |
-| `npm run preview` | Serve the production build                     |
+---
 
-### SMTP / password reset
+## Demo Accounts & Role Permissions
 
-OTP reset emails are sent by the Express API using nodemailer. Copy `.env.example` to
-`.env` and set `SMTP_USER` / `SMTP_PASS` (plus optionally `SMTP_HOST`, `SMTP_PORT`,
-`SMTP_SERVICE`, `SMTP_FROM`). Without credentials the API still runs, `/api/send-otp`
-returns a 500, and the UI falls back to showing the code in a demo inbox panel.
+The system includes pre-seeded accounts configured for each role:
 
-## Project structure
+| Role                   | Demo Email                 | Password    | Primary Permissions & Access Scope |
+| ---------------------- | -------------------------- | ----------- | ---------------------------------- |
+| **Admin**              | `admin@stocksense.io`       | `Admin@123` | Complete root access: users, audit, settings, operations, approvals. |
+| **Inventory Manager**  | `demo@stocksense.app`       | `Demo@123`  | Catalog, stock valuation, adjustments, transfers, and inventory approvals. |
+| **Warehouse Staff**    | `staff@stocksense.io`       | `Staff@123` | Receipts, delivery picks/packs, cycle counts, putaway rules. |
+| **Purchasing Manager** | `purchasing@stocksense.io`  | `Purch@123` | Vendors, purchase orders, PO approvals, purchasing reports. |
+| **Sales Manager**      | `sales@stocksense.io`       | `Sales@123` | Customers, sales orders, stock reservations, sales reports. |
+| **Auditor**            | `auditor@stocksense.io`     | `Audit@123` | Read-only compliance: immutable audit logs, reports export, stock ledger. |
 
-Sources live at the repository root (no `src/` directory).
+---
+
+## System Architecture & Modules
+
+### 1. Real Role-Based Access Control (RBAC)
+- **Granular Permissions**: 20 permissions covering all functional domains (`dashboard.view`, `products.view/create/edit/delete`, `inventory.adjust/approve`, `warehouse.manage`, `purchasing.view/create/approve`, `sales.view/create/approve`, `returns.manage`, `reports.view/export`, `users.manage`, `settings.manage`, `audit.view`).
+- **Enforcement Layers**:
+  - Store-level action guards: mutating store actions validate permissions through `can(permission)`.
+  - Route-level guards: `<RequirePermission permission="...">` blocks unauthorized routes.
+  - UI navigation adaptation: sidebar links automatically adapt to role clearance.
+
+### 2. User Management (`/settings/users`)
+- Administrator user directory displaying role, active/inactive state, phone, last login, and creation date.
+- Operations: Create new team members, edit metadata, activate/deactivate accounts, assign roles, and trigger secure password resets.
+- Passwords use SHA-256 cryptographic hashing and are never exposed in the UI.
+
+### 3. Immutable Compliance Audit Trail (`/audit-log`)
+- Complete tamper-evident audit record capturing:
+  - Timestamp, user name, email, and role
+  - Action: `CREATE`, `UPDATE`, `DELETE`, `CONFIRM`, `PICK`, `PACK`, `VALIDATE`, `CANCEL`, `LOGIN`, `LOGOUT`, `APPROVE`, `REJECT`
+  - Target entity, entity ID, and document number
+  - Old values, new values, and contextual metadata
+- Multi-filter search suite: query keyword, user, action type, entity category, and date range.
+- Records are strictly immutable and cannot be altered or removed from the UI.
+
+### 4. Approval Workflows & Threshold Governance
+- Configurable approval policy:
+  - **Purchase Orders**: Orders exceeding the threshold require Purchasing Manager or Admin approval before release to vendors.
+  - **Inventory Adjustments**: Variances exceeding financial threshold require Inventory Manager approval before posting to the ledger.
+  - **Returns**: High-value returns require approval.
+- Workflow Stages: `Draft` &rarr; `Submitted` &rarr; `Pending Approval` &rarr; `Approved / Rejected` &rarr; `Posted`.
+- Stores approver identity, timestamp, and review commentary.
+
+### 5. Notification Center & Alerts Engine (`/notifications`)
+- Header notification bell with unread badge and quick-view popover dropdown.
+- Full notification center with category filters, "Mark Read", "Mark All as Read", and direct navigation links.
+- Automated alert rules:
+  - `LOW_STOCK` & `OUT_OF_STOCK`: Stock below replenishment threshold.
+  - `PO_OVERDUE`: Purchase orders past promised delivery date.
+  - `CYCLE_COUNT`: Scheduled warehouse verifications.
+  - `APPROVAL_REQUIRED`: High-value operations awaiting manager clearance.
+- Intelligent deduplication engine prevents alert spamming.
+
+### 6. Enterprise Reports Suite (27 Reports) (`/reports`)
+The reporting suite delivers 27 specialized audit reports grouped into 4 domains:
+
+#### Inventory Domain (11 Reports)
+1. **Current Stock On Hand**: Real-time stock on hand, allocated, and free available quantities.
+2. **Inventory by Warehouse**: Stock distribution, SKU depth, and valuation across facilities.
+3. **Inventory by Location / Bin**: Bin-level quant breakdown across internal racks.
+4. **Inventory Valuation**: Weighted Average Cost (WAC) valuation ledger.
+5. **Stock Movement Audit**: Chronological log of receipts, deliveries, and adjustments.
+6. **Stock Aging Analysis**: Aging buckets (<30d, 31-60d, 61-90d, 90d+) to detect stagnant capital.
+7. **Dead Stock Report**: Zero outbound movement over the past 90+ days.
+8. **Slow Moving Items**: Low velocity items with turnover < 1.0.
+9. **Fast Moving Items (Runners)**: High turnover items with rapid demand.
+10. **Stock Turnover Ratio**: Inventory velocity metric (COGS / Average Inventory).
+11. **Stock Variance & Discrepancies**: Cycle count discrepancy analysis.
+
+#### Purchasing Domain (5 Reports)
+12. **Purchase Orders Summary**: Procurement orders, totals, and fulfillment status.
+13. **Vendor Scorecard & Performance**: On-time delivery rate, fulfillment accuracy, and lead times.
+14. **Purchase Spend Analysis**: Expenditures by supplier, category, and date period.
+15. **Overdue Purchase Orders**: POs exceeding vendor delivery promises.
+16. **Purchase Receipts Log**: Receiving dock transactions against purchase orders.
+
+#### Sales Domain (6 Reports)
+17. **Sales Orders Master**: Orders across Draft, Confirmed, Reserved, and Shipped stages.
+18. **Customer Sales Summary**: Total revenue, order count, and gross order values.
+19. **Product Sales & Margin**: Units sold, gross sales revenue, COGS, and profit margin.
+20. **Fulfillment & OTIF**: Line fulfillment rate and on-time in-full performance.
+21. **Backorders & Shortages**: Customer orders waiting on stock replenishment.
+22. **Returns & RMA Analysis**: Customer return reasons, inspection dispositions, and refunds.
+
+#### Warehouse Operations Domain (5 Reports)
+23. **Picking Performance**: Wave/batch picking orders, completion times, and picker stats.
+24. **Receiving Dock Performance**: Dock turnaround and receiving verification.
+25. **Packing & Cartonizing**: Package carton counts, dispatch weights, and containers.
+26. **Cycle Count Audit**: Scheduled cycle counts, blind verifications, and adjustments.
+27. **Warehouse Capacity Utilization**: Storage density, zones, and capacity utilization.
+
+#### Report Builder Features
+- **Multi-Dimensional Filters**: Date range, warehouse, location, category, product, vendor, customer, and status.
+- **Dynamic Grouping**: Group rows by warehouse, category, or status.
+- **Totals Calculation**: Automatic summation of quantities, valuation, revenue, and spend.
+- **Saved Presets**: Save and reload custom filter configurations in `localStorage`.
+- **Instant Exports**: One-click **CSV**, **JSON**, and print-friendly export.
+
+### 7. Global Search Modal (`Ctrl+K` / `⌘+K`)
+- Omnipresent command palette accessible from anywhere via `Ctrl+K`.
+- Searches across Products, SKUs, Purchase Orders, Sales Orders, Operations, Customers, Vendors, and Warehouses.
+- Categorized result listing with keyboard navigation (`↑`/`↓` and `Enter`).
+
+### 8. Printable Business Documents
+- Printable layouts with clean typography, company header, line item tables, financial totals, and dual sign-off signature blocks:
+  - Purchase Orders
+  - Sales Orders
+  - Goods Receipt Notes (GRN)
+  - Delivery Order Slips
+  - Internal Stock Transfers
+  - Return Notes & RMA Dispositions
+  - Inventory Adjustment Vouchers
+
+### 9. Activity Timeline Component
+- Chronological event timeline attached to POs, SOs, Operations, and Returns.
+- Visualizes lifecycle progression (`Draft` &rarr; `Approved` &rarr; `Partially Received` &rarr; `Fully Received`).
+
+### 10. Multi-Tab System Settings (`/settings`)
+- **Company Profile**: Legal company name, tax ID, currency, email, phone, and address.
+- **Inventory Policies**: Default warehouse, negative stock policy, lot & serial tracking toggles, valuation method (WAC / FIFO).
+- **Numbering Sequences**: Configurable prefix and auto-incrementing document sequences.
+- **Approval Thresholds**: Value limits for PO approvals, adjustment variances, and returns.
+- **Alert Rules**: Stockout warning days, expiry alert thresholds, and variance triggers.
+
+---
+
+## Project Structure
 
 ```
-index.html            Entry HTML; pre-paint theme script, loads /main.tsx
-main.tsx              React root, imports ./index.css
-App.tsx               All 40 routes + StoreProvider + BrowserRouter
-store.tsx             Single store: state, all mutations, localStorage sync
-types.ts              Domain model (documents, quants, ledger, orders, partners…)
-server.js             Express API: /api/health, /api/send-otp
-index.css             Tailwind entry + ivory/black CSS variables (light + .dark)
-tailwind.config.js    darkMode: 'class' + semantic color tokens
-vite.config.ts        react() plugin + /api proxy
-vite-env.d.ts         /// <reference types="vite/client" />
+index.html                     Entry HTML with theme initialization script
+main.tsx                       Application bootstrapper
+App.tsx                        Route definitions with RBAC route-level guards
+store.tsx                      StoreProvider: global state, mutations, localStorage sync
+types.ts                       Complete domain model (quants, ledger, documents, users, audit...)
+server.js                      Express API server (SMTP relay & OTP delivery)
+index.css                      Tailwind entry + CSS color tokens (light & dark mode)
+tailwind.config.js             Semantic token bindings
+vite.config.ts                 Vite bundler configuration & /api proxy
 
 components/
-  AppShell.tsx        Sidebar, header, theme toggle, auth route guards
-  AuthFrame.tsx       Split-screen auth layout + ShapeBlur backdrop
-  ShapeBlur.tsx       WebGL blurred-shape component (React Bits)
-  MagicBento.tsx      Animated bento card grid (React Bits)
-  MagicBento.css      Bento styles, scoped to .bento-section / .bento-surface
-  bentoShared.ts      Shared gsap particle/ripple plumbing + interaction hook
-  AutoBentoSurfaces.tsx  Applies the bento treatment to all standard panels
-  ThemeToggle.tsx     useTheme() hook + toggle button
-  Operations.tsx      OperationList + OperationForm (shared by all doc types)
-  Badges.tsx          StatusBadge / TypeBadge pills
+  AppShell.tsx                 Sidebar with BranchedMenu, header, Ctrl+K search, notifications
+  RequirePermission.tsx        Route and component-level RBAC authorization wrappers
+  NotificationBell.tsx         Header bell with unread count badge & dropdown menu
+  GlobalSearchModal.tsx        Ctrl+K categorized omni-search modal
+  PrintableDocument.tsx        Print layout component with company branding & signatures
+  ActivityTimeline.tsx         Record event audit history component
+  ConfirmDialog.tsx            Destructive action confirmation modal
+  Toast.tsx                    Toast notifications provider (`useToast`)
+  Operations.tsx               OperationList & OperationForm for receipts/deliveries/transfers
+  AutoBentoSurfaces.tsx        Automatic MagicBento hover treatment for cards & panels
+  MagicBento.tsx               Interactive bento card grid
+  BranchedMenu.tsx             Tree-folded sidebar navigation menu
+  ShapeBlur.tsx                Three.js WebGL shader background
+  AuthFrame.tsx                Authentication split-screen layout
+  Badges.tsx                   Status badges & pills
+  ThemeToggle.tsx              Light / Dark theme toggle button
 
 lib/
-  seed.ts             Demo dataset
-  inventory.ts        Stock math, status/type class maps, filters
-  csv.ts              CSV export helper
-  utils.ts            uid(), SHA-256 hashing, OTP generation, date formatting
+  rbac.ts                      Role-permission matrix and authorization guard functions
+  export.ts                    Reusable CSV, JSON, and print export utilities
+  notifications.ts             Notification evaluation & deduplication engine
+  inventory.ts                 Stock calculations, valuations, and intelligence metrics
+  seed.ts                      Complete demo dataset (users, warehouses, products, POs, SOs...)
+  utils.ts                     Cryptographic helpers, formatting, and unique ID generators
 
-pages/                25 route components (dashboard, products, orders, reports, …)
+pages/
+  DashboardPage.tsx            Executive KPI overview with 3D/Bento widgets
+  ProductsPage.tsx             Product catalog & master inventory list
+  UsersPage.tsx                Admin user management & role assignment
+  AuditLogPage.tsx             Immutable compliance audit log
+  NotificationsPage.tsx        Notification center with filtering & action links
+  ReportsPage.tsx              Enterprise 27-report suite with dynamic Report Builder
+  SettingsPage.tsx             Multi-tab system settings & configuration suite
+  PurchaseOrdersPage.tsx       Purchase order procurement list
+  PurchaseOrderDetailPage.tsx  PO detail with approvals, printable document, timeline
+  SalesOrdersPage.tsx          Sales order list
+  SalesOrderDetailPage.tsx     SO detail with stock reservation matrix, print, timeline
+  ReturnsPage.tsx              Returns and RMA tracking
+  ReturnDetailPage.tsx         Return inspection disposition & printable note
+  WarehouseDashboardPage.tsx   Warehouse operational center
+  WarehousesPage.tsx           Warehouse facilities management
+  ZonesPage.tsx                Warehouse zones and bin locations
+  CycleCountsPage.tsx          Cycle count schedules and discrepancy verifications
+  PickingPage.tsx              Warehouse order picking operations
+  PackingPage.tsx              Cartonizing and package container packing
+  ShippingPage.tsx             Outbound dispatch and shipping carrier tracking
+  VariantsPage.tsx             Product attribute matrix and variant management
+  LotsPage.tsx                 Batch & lot traceability
+  SerialsPage.tsx              Individual serial number tracking & lifecycle
+  PutawayPage.tsx              Automated warehouse putaway routing rules
+  ValuationPage.tsx            Stock valuation breakdown
+  IntelligencePage.tsx         Dead stock, stockout risk, and reorder intelligence
+  CustomersPage.tsx            Customer accounts directory
+  VendorsPage.tsx              Supplier directory & scorecard
+  LoginPage.tsx                Authentication login
+  SignupPage.tsx               User registration
+  ForgotPasswordPage.tsx       Email OTP password reset
+  ProfilePage.tsx              User profile view & password update
 ```
 
-## Theming: ivory & black + dark mode
+---
 
-Every color in the app is a **semantic token** backed by a CSS variable, so dark mode is a
-single `.dark` class on `<html>` — no component needs to know which theme is active.
+## Resetting Demo Data
 
-`tailwind.config.js` sets `darkMode: 'class'` and maps tokens to variables:
-
-| Token          | Class                        | Role                        |
-| -------------- | ---------------------------- | --------------------------- |
-| `canvas`       | `bg-canvas`                  | Page background             |
-| `surface`      | `bg-surface`                 | Cards, panels, inputs       |
-| `surface-2`    | `bg-surface-2`               | Table heads, subtle fills   |
-| `line`         | `border-line`                | Primary borders             |
-| `line-soft`    | `border-line-soft`           | Row dividers                |
-| `fg`           | `text-fg`                    | Primary text                |
-| `fg-soft`      | `text-fg-soft`               | Tertiary text               |
-| `fg-muted`     | `text-fg-muted`              | Secondary text              |
-| `fg-subtle`    | `text-fg-subtle`             | Placeholders / empty states |
-| `accent`       | `bg-accent`                  | Primary action              |
-| `accent-fg`    | `text-accent-fg`             | Text on a primary action    |
-| `sidebar`      | `bg-sidebar`                 | Always-black nav rail       |
-| `on-sidebar`   | `text-on-sidebar`            | Text on the nav rail        |
-
-`ink`, `muted` and `brand` are kept as **aliases** of `fg`, `fg-muted` and `accent`, so
-older markup themes automatically.
-
-The palette itself lives in `index.css` as space-separated RGB channels (so Tailwind's
-opacity modifiers like `bg-accent/30` work):
-
-|                | Light                | Dark                 |
-| -------------- | -------------------- | -------------------- |
-| canvas         | ivory `#F6F4EE`     | near-black `#0A0A0B` |
-| surface        | `#FFFFFF`            | `#161618`            |
-| accent         | black `#111111`      | ivory `#F2EFE6`      |
-| fg             | black `#111111`      | ivory `#F2EFE6`      |
-| sidebar        | black `#0E0E0F`      | black `#000000`      |
-
-Because the accent inverts, the sidebar stays black in both themes and the primary button
-flips black → ivory automatically.
-
-### Adding a color
-
-Prefer an existing token. If you truly need a new one, add the CSS variable to both `:root`
-and `.dark` in `index.css`, then map it in `tailwind.config.js` with the
-`rgb(var(--c-name) / <alpha-value>)` pattern.
-
-### Status colors
-
-Status and type pills (`lib/inventory.ts`) use light tints plus a `dark:` override, e.g.
-`bg-amber-100 text-amber-800 dark:bg-amber-500/20 dark:text-amber-300`. Keep that pattern
-for any new colored surface.
-
-## ShapeBlur (WebGL backdrop)
-
-`components/ShapeBlur.tsx` is the [React Bits](https://reactbits.dev) ShapeBlur component,
-converted from JavaScript to TypeScript. It draws an SDF shape on a full-bleed WebGL quad
-and reacts to pointer movement with a damped "circle" reveal.
-
-It backs the login/signup/forgot-password split screen (`AuthFrame`), layered over the black
-panel at `opacity-[0.16]`.
-
-### Props
-
-| Prop             | Type     | Default | Description                                  |
-| ---------------- | -------- | ------- | -------------------------------------------- |
-| `variation`      | `number` | `0`     | Shape variation compiled into the shader (0-3) |
-| `pixelRatioProp` | `number` | `2`     | Pixel ratio override (use device pixel ratio) |
-| `shapeSize`      | `number` | `1.2`   | Size of the shape                            |
-| `roundness`      | `number` | `0.4`   | Corner roundness                             |
-| `borderSize`     | `number` | `0.05`  | Border thickness                             |
-| `circleSize`     | `number` | `0.3`   | Size of the hover circle effect              |
-| `circleEdge`     | `number` | `0.5`   | Edge softness of the hover circle            |
-
-### Usage
-
-```tsx
-import ShapeBlur from './components/ShapeBlur'
-
-<div style={{ position: 'relative', height: '500px', overflow: 'hidden' }}>
-  <ShapeBlur
-    variation={0}
-    pixelRatioProp={window.devicePixelRatio || 1}
-    shapeSize={0.5}
-    roundness={0.5}
-    borderSize={0.05}
-    circleSize={0.5}
-    circleEdge={1}
-  />
-</div>
-```
-
-Notes:
-
-- The component renders an **empty `div`** and appends its own `<canvas>`, so it must sit
-  inside a sized, `position: relative` container.
-- It is **lazy-loaded** via `React.lazy` in `AuthFrame`. `three` is ~520 kB minified;
-  keeping it in its own chunk means the login form paints before WebGL arrives.
-- `variation` is a shader compile-time `#define`, so changing it tears down and rebuilds the
-  renderer. All other props are live uniforms.
-- Cleanup disposes geometry, material and the WebGL context, and disconnects the
-  `ResizeObserver` and pointer listeners.
-
-## MagicBento (animated surfaces)
-
-Two pieces, both built on `gsap`:
-
-| File                            | Role                                                            |
-| ------------------------------- | --------------------------------------------------------------- |
-| `components/bentoShared.ts`     | Shared particle/ripple/GSAP plumbing and the `useCardInteractions` hook |
-| `components/MagicBento.tsx`     | Card-grid component (data-driven, responsive)                    |
-| `components/MagicBento.css`     | Styles, scoped to `.bento-section` / `.bento-surface`            |
-| `components/AutoBentoSurfaces.tsx` | Applies the treatment to existing panels with no per-page edits |
-
-### 1. The card grid
-
-Used for the dashboard KPI row:
-
-```tsx
-<MagicBento
-  cards={kpiCards}
-  columns={5}
-  compact
-  enableTilt
-  enableMagnetism
-  clickEffect
-  spotlightRadius={260}
-  particleCount={10}
-/>
-```
-
-Each entry in `cards` accepts `label`, `title`, `description`, `value`, `icon`,
-`span: { col, row }`, `color`, `href`, and `onClick`. With no `cards` prop it falls back to the
-upstream placeholder set.
-
-Unlike upstream, `cards` is a prop (upstream hard-coded six placeholder cards, which made the
-component unusable for real data) and grid spans are data-driven, so any card count lays out
-correctly. Columns also collapse responsively — `--bento-cols-max` is the requested count and a
-media-query `--bento-cols-cap` wins on narrow viewports, instead of squeezing cards into slivers.
-
-### 2. Every other panel, automatically
-
-The app has ~90 panels sharing the surface classes, spread over 20 pages, so rather than
-wrapping each one, `AutoBentoSurfaces` (mounted once in `AppShell`) matches them by selector and
-wires them with a single delegated listener set:
-
-```
-:is(div, form, section, article).border.border-line.bg-surface[class*="rounded-"]
-```
-
-The radius is matched as a substring because the codebase has two conventions — older pages use
-`rounded-2xl`, newer ones `rounded-xl`. Matching is restricted to block containers so text inputs
-and selects, which also carry `border-line bg-surface`, are never decorated.
-
-That covers the stat cards, filter bars, data tables, warehouse/zone rows, and detail panels
-throughout the app with **zero per-page changes**.
-
-Behaviour differences from the grid, deliberately:
-
-- **Tilt and magnetism are off.** They transform the element, which makes text blurry and shifts
-  tables out from under the cursor. The grid still opts into them for KPI tiles.
-- **No global spotlight element.** Each panel gets a pointer-following border glow and a low-alpha
-  inner wash instead, which avoids stacking 800 px fixed overlays across ~90 panels.
-- Clicks on `button`, `a`, `input`, `select`, `textarea` and `[role="button"]` don't ripple.
-
-### Opting a panel out
-
-Add `data-bento="off"` to the panel or any ancestor:
-
-```tsx
-<div data-bento="off" className="rounded-xl border border-line bg-surface">
-  {/* no hover treatment */}
-</div>
-```
-
-### Props
-
-`MagicBento` keeps the upstream API — `textAutoHide`, `enableStars`, `enableSpotlight`,
-`enableBorderGlow`, `disableAnimations`, `spotlightRadius`, `particleCount`, `enableTilt`,
-`glowColor`, `clickEffect`, `enableMagnetism` — plus `cards`, `columns`, and `compact`.
-
-`glowColor` is RGB channels without an `rgba()` wrapper. It defaults to ivory
-(`242, 239, 230`), which reads on the dark canvas and degrades to a faint warm sheen on white.
-
-### Notes
-
-- Both components are **lazy-loaded**, so `gsap` (~200 kB) stays out of the main chunk. The
-  dashboard `Suspense` fallback reserves the same height to avoid layout shift.
-- Animations are skipped on viewports ≤768 px and when `prefers-reduced-motion: reduce` is set.
-- Every particle and ripple node GSAP creates is removed on mouse-out and unmount.
-- `overflow: hidden` is applied to auto-attached surfaces so particles clip to the panel. Native
-  `<select>` menus and tooltips are not affected, but a custom popover rendered *inside* a panel
-  would be clipped.
-
-## Domain model
-
-### Locations
-
-| Type             | Purpose                                  |
-| ---------------- | ---------------------------------------- |
-| `internal`       | Real stock, belongs to a warehouse       |
-| `vendor`         | Source endpoint for receipts             |
-| `customer`       | Destination endpoint for deliveries      |
-| `inventory_loss` | Virtual sink for shrinkage from adjustments |
-
-Only `internal` locations count toward on-hand totals.
-
-### Documents
-
-- **Types** — `receipt`, `delivery`, `internal`, `adjustment`
-- **Statuses** — `draft` → `waiting` / `ready` → `done`, or `canceled`
-- **References** — per-type sequence: `WH/IN/00001`, `WH/OUT/00001`, `WH/INT/00001`, `WH/ADJ/00001`
-
-### Lifecycle
-
-1. **Save draft** — editable while `draft`.
-2. **Confirm** (`draft → ready`) — deliveries auto-drop to `waiting` if stock is short.
-3. **Pick** (deliveries only) — blocked while short; clears a `waiting` order.
-4. **Pack** (deliveries only) — requires `pickDone`.
-5. **Validate** — the only step that moves stock, writing to `quants` and appending to `ledger`:
-   - `receipt` → adds to destination
-   - `delivery` / `internal` → subtracts from source, adds to destination
-   - `adjustment` → posts the difference between counted and theoretical quantity, routing
-     shrinkage to `inventory_loss`
-6. **Cancel** — allowed any time before `done`.
-
-## Resetting demo data
-
-All client state lives under the `stocksense-v2` key:
+All client state is persisted under the `stocksense-v4` key with automatic backward-compatibility migration:
 
 ```js
-localStorage.removeItem('stocksense-v2')
-location.reload()
+// In browser developer console:
+localStorage.removeItem('stocksense-v4');
+location.reload();
 ```
 
-## Known limitations
+---
 
-- `patchDoc` in `store.tsx` returns validation errors through a closure variable captured
-  inside a `setState` updater, which React StrictMode may invoke more than once.
-- `AuthFrame.tsx` exports both components and the `inputClass` const, so Vite's Fast Refresh
-  cannot hot-reload it and falls back to a full reload. Harmless in dev.
-- `ZonesPage.tsx` nests a `<button>` (the "Add Zone" button) inside the warehouse header `<button>`,
-  which React flags as invalid DOM nesting.
-- `AutoBentoSurfaces` sets `overflow: hidden` on matched panels; a custom popover rendered inside
-  one would be clipped. Use `data-bento="off"` on that panel.
-- The sidebar is a fixed `w-64` with no mobile drawer, so the layout is cramped below
-  ~1024px.
-- `App.css` and `assets/{react.svg,vite.svg}` are unused leftovers from the Vite starter.
-- `npm audit` reports 4 advisories (esbuild dev server, react-router). Both need a
-  major-version bump to clear.
-- There is no test suite.
+## License
+
+Private repository — StockSense IMS.
