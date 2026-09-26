@@ -1,13 +1,15 @@
-import { useMemo, useState, type ReactNode } from 'react'
+import { lazy, Suspense, useMemo, useState, type ReactNode } from 'react'
 import { Link } from 'react-router-dom'
 import { AlertTriangle, ArrowLeftRight, Package, PackageMinus, PackagePlus, Truck } from 'lucide-react'
 import { StatusBadge, TypeBadge } from '../components/Badges'
 import { inputClass } from '../components/AuthFrame'
+import type { BentoCardData } from '../components/MagicBento'
 import { lowStockItems, matchesFilters, totalOnHand } from '../lib/inventory'
 import { useStore } from '../store'
 import type { DocStatus, DocType } from '../types'
 
-const kpiCard = 'rounded-2xl border border-line bg-surface p-5 shadow-sm'
+// gsap is ~200 kB; keep it out of the main chunk so the login page stays light.
+const MagicBento = lazy(() => import('../components/MagicBento'))
 
 export function DashboardPage() {
   const { state } = useStore()
@@ -31,6 +33,49 @@ export function DashboardPage() {
     [state, type, status, warehouseId, categoryId, q],
   )
 
+  const kpiCards: BentoCardData[] = [
+    {
+      label: 'Stock',
+      value: productsInStock,
+      title: 'Total Products in Stock',
+      description: `${state.products.length} SKUs`,
+      icon: <Package size={17} className="text-brand" />,
+      href: '/products',
+    },
+    {
+      label: 'Alerts',
+      value: lows.length,
+      title: 'Low / Out of Stock',
+      description: 'Reorder alerts',
+      icon: <AlertTriangle size={17} className="text-rose-500" />,
+      href: '/products',
+    },
+    {
+      label: 'Inbound',
+      value: pendingReceipts,
+      title: 'Pending Receipts',
+      description: 'Inbound not done',
+      icon: <PackagePlus size={17} className="text-indigo-500" />,
+      href: '/receipts',
+    },
+    {
+      label: 'Outbound',
+      value: pendingDeliveries,
+      title: 'Pending Deliveries',
+      description: 'Outbound not done',
+      icon: <Truck size={17} className="text-fuchsia-500" />,
+      href: '/deliveries',
+    },
+    {
+      label: 'Internal',
+      value: scheduledTransfers,
+      title: 'Transfers Scheduled',
+      description: 'Internal moves',
+      icon: <ArrowLeftRight size={17} className="text-cyan-600" />,
+      href: '/transfers',
+    },
+  ]
+
   return (
     <div className="space-y-6">
       <div>
@@ -38,23 +83,41 @@ export function DashboardPage() {
         <p className="text-sm text-fg-muted">Live snapshot of stock, documents, and warehouse movement.</p>
       </div>
 
-      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
-        <Kpi icon={<Package className="text-brand" size={18} />} label="Total Products in Stock" value={productsInStock} hint={`${state.products.length} SKUs`} />
-        <Kpi icon={<AlertTriangle className="text-rose-500" size={18} />} label="Low / Out of Stock" value={lows.length} hint="Reorder alerts" />
-        <Kpi icon={<PackagePlus className="text-indigo-500" size={18} />} label="Pending Receipts" value={pendingReceipts} hint="Inbound not done" />
-        <Kpi icon={<Truck className="text-fuchsia-500" size={18} />} label="Pending Deliveries" value={pendingDeliveries} hint="Outbound not done" />
-        <Kpi icon={<ArrowLeftRight className="text-cyan-600" size={18} />} label="Transfers Scheduled" value={scheduledTransfers} hint="Internal moves" />
-      </div>
+      {/* Fallback reserves the same height so the lazy chunk causes no layout shift. */}
+      <Suspense
+        fallback={
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-5">
+            {kpiCards.map((card) => (
+              <div key={card.label} className="h-[116px] animate-pulse rounded-2xl border border-line bg-surface" />
+            ))}
+          </div>
+        }
+      >
+        <MagicBento
+          cards={kpiCards}
+          columns={5}
+          compact
+          enableTilt
+          enableMagnetism
+          clickEffect
+          enableStars
+          enableSpotlight
+          enableBorderGlow
+          spotlightRadius={260}
+          particleCount={10}
+          textAutoHide
+        />
+      </Suspense>
 
       {lows.length > 0 ? (
-        <div className="rounded-2xl border border-$1-100 dark:border-$1-500/30 bg-rose-50 p-4">
-          <div className="mb-2 text-sm font-semibold text-rose-800">Low stock alerts</div>
+        <div className="rounded-2xl border border-rose-100 bg-rose-50 p-4 dark:border-rose-500/30 dark:bg-rose-500/15">
+          <div className="mb-2 text-sm font-semibold text-rose-800 dark:text-rose-300">Low stock alerts</div>
           <div className="flex flex-wrap gap-2">
             {lows.map((row) => (
               <Link
                 key={row.product.id}
                 to={`/products/${row.product.id}`}
-                className="rounded-full bg-surface px-3 py-1 text-xs font-medium text-rose-700 ring-1 ring-$1-200 dark:ring-$1-500/30"
+                className="rounded-full bg-surface px-3 py-1 text-xs font-medium text-rose-700 ring-1 ring-rose-200 dark:text-rose-300 dark:ring-rose-500/30"
               >
                 {row.product.sku} · {row.onHand} {row.product.uom} {row.out ? '(out)' : `(min ${row.min})`}
               </Link>
@@ -163,27 +226,6 @@ export function DashboardPage() {
         <Quick to="/transfers/new" icon={<ArrowLeftRight size={16} />} label="New transfer" />
         <Quick to="/adjustments/new" icon={<AlertTriangle size={16} />} label="Stock adjustment" />
       </div>
-    </div>
-  )
-}
-
-function Kpi({
-  icon,
-  label,
-  value,
-  hint,
-}: {
-  icon: ReactNode
-  label: string
-  value: number
-  hint: string
-}) {
-  return (
-    <div className={kpiCard}>
-      <div className="mb-3 flex h-9 w-9 items-center justify-center rounded-xl bg-surface-2">{icon}</div>
-      <div className="text-2xl font-semibold">{value}</div>
-      <div className="text-sm font-medium text-fg">{label}</div>
-      <div className="text-xs text-fg-muted">{hint}</div>
     </div>
   )
 }

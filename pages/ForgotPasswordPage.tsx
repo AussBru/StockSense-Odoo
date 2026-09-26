@@ -69,7 +69,7 @@ export function ForgotPasswordPage() {
         </AuthForm>
       ) : (
         <AuthForm onSubmit={complete}>
-          <div className="rounded-lg border border-$1-100 dark:border-$1-500/30 bg-indigo-50 p-3 text-sm text-indigo-900">
+          <div className="rounded-lg border border-indigo-100 bg-indigo-50 p-3 text-sm text-indigo-900 dark:border-indigo-500/30 dark:bg-indigo-500/15 dark:text-indigo-300">
             <div className="font-semibold">Check your inbox</div>
             <div className="mt-0.5 text-xs text-indigo-700">
               We emailed a 6-digit OTP code to <span className="font-semibold text-indigo-900">{email}</span>. Valid for 10 minutes.

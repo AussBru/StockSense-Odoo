@@ -87,7 +87,7 @@ export function ReturnDetailPage() {
               <StatusBadge status={ret.status} />
               <span
                 className={`rounded-full px-2 py-0.5 text-xs font-semibold ${
-                  ret.type === 'customer' ? 'bg-$1-50 text-$1-700 dark:bg-$1-500/15 dark:text-$1-300' : 'bg-$1-50 text-$1-800 dark:bg-$1-500/15 dark:text-$1-300'
+                  ret.type === 'customer' ? 'bg-purple-50 text-purple-700 dark:bg-purple-500/15 dark:text-purple-300' : 'bg-sky-50 text-sky-800 dark:bg-sky-500/15 dark:text-sky-300'
                 }`}
               >
                 {ret.type === 'customer' ? 'Customer RMA' : 'Vendor Return'}
@@ -205,7 +205,7 @@ export function ReturnDetailPage() {
                   isCurrent
                     ? 'border-brand bg-brand/10 text-brand'
                     : isDone
-                    ? 'border-emerald-200 bg-$1-50 text-$1-800 dark:bg-$1-500/15 dark:text-$1-300'
+                    ? 'border-emerald-200 bg-emerald-50 text-emerald-800 dark:border-emerald-500/30 dark:bg-emerald-500/15 dark:text-emerald-300'
                     : 'border-line-soft bg-surface-2 text-fg-subtle'
                 }`}
               >

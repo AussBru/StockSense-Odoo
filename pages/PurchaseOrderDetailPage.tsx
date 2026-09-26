@@ -222,7 +222,7 @@ export function PurchaseOrderDetailPage() {
                     isCurrent
                       ? 'border-brand bg-brand/10 text-brand'
                       : isDone
-                      ? 'border-emerald-200 bg-$1-50 text-$1-800 dark:bg-$1-500/15 dark:text-$1-300'
+                      ? 'border-emerald-200 bg-emerald-50 text-emerald-800 dark:border-emerald-500/30 dark:bg-emerald-500/15 dark:text-emerald-300'
                       : 'border-line-soft bg-surface-2 text-fg-subtle'
                   }`}
                 >

@@ -409,7 +409,7 @@ export function OperationForm({ type }: { type: DocType }) {
 
 function Step({ done, label }: { done: boolean; label: string }) {
   return (
-    <span className={`rounded-full px-2.5 py-1 font-semibold ${done ? 'bg-$1-100 text-$1-800 dark:bg-$1-500/20 dark:text-$1-300' : 'bg-surface-2 text-fg-muted'}`}>
+    <span className={`rounded-full px-2.5 py-1 font-semibold ${done ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-500/20 dark:text-emerald-300' : 'bg-surface-2 text-fg-muted'}`}>
       {label}
     </span>
   )
