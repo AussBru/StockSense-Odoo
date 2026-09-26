@@ -138,11 +138,33 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       const user = state.users.find((u) => u.email.toLowerCase() === email.trim().toLowerCase())
       if (!user) return { error: 'No account found for that email.' }
       const code = generateOtp()
+
+      try {
+        const res = await fetch('/api/send-otp', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email: user.email, otp: code }),
+        })
+        const data = await res.json().catch(() => null)
+        if (!res.ok || !data?.success) {
+          return {
+            error:
+              data?.error ||
+              'Failed to send OTP to your email. Please verify SMTP settings in the .env file.',
+          }
+        }
+      } catch {
+        return {
+          error:
+            'Could not reach the email server. Please ensure the backend is running.',
+        }
+      }
+
       setState((s) => ({
         ...s,
         pendingOtp: { email: user.email, code, expiresAt: Date.now() + 10 * 60 * 1000 },
       }))
-      return { error: null, otp: code }
+      return { error: null }
     }
 
     const resetPassword: StoreApi['resetPassword'] = async (email, otp, password) => {
