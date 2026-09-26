@@ -1,4 +1,4 @@
-import type { AppState, Customer, PurchaseOrder, ReturnOrder, SalesOrder, StockReservation, Vendor } from '../types'
+import type { AppState, Customer, PurchaseOrder, ReturnOrder, SalesOrder, StockReservation, Vendor, BarcodeRecord, Lot, PickingOrder, ProductExtension, SerialNumber, WarehouseZone, CycleCount, Package, Shipment, PutawayRule, LocationExtension, ProductVariant } from '../types'
 import { uid } from './utils'
 
 const DEMO_HASH =
@@ -762,5 +762,147 @@ export function createSeed(): AppState {
     salesOrders,
     reservations,
     returnOrders,
+
+    // ── Warehouse Operations Addon v3 seed data ──────────────
+
+    barcodeRecords: [
+      { id: uid('bc'), barcode: 'SS-PRD-STEEL001', format: 'CODE128', entityType: 'product', entityId: pSteel, createdAt: '2026-09-01T08:00:00.000Z' },
+      { id: uid('bc'), barcode: 'SS-PRD-ROD00001', format: 'CODE128', entityType: 'product', entityId: pRod, createdAt: '2026-09-01T08:00:00.000Z' },
+      { id: uid('bc'), barcode: 'SS-PRD-CHAIR001', format: 'CODE128', entityType: 'product', entityId: pChair, createdAt: '2026-09-01T08:00:00.000Z' },
+      { id: uid('bc'), barcode: 'SS-PRD-FRAME001', format: 'CODE128', entityType: 'product', entityId: pFrame, createdAt: '2026-09-01T08:00:00.000Z' },
+      { id: uid('bc'), barcode: 'SS-LOC-MAINST01', format: 'CODE128', entityType: 'location', entityId: locMain, createdAt: '2026-09-01T08:00:00.000Z' },
+      { id: uid('bc'), barcode: 'SS-LOC-PRODRK01', format: 'CODE128', entityType: 'location', entityId: locProd, createdAt: '2026-09-01T08:00:00.000Z' },
+      { id: uid('bc'), barcode: 'SS-WH-MAIN0001', format: 'CODE128', entityType: 'warehouse', entityId: wh1, createdAt: '2026-09-01T08:00:00.000Z' },
+    ] as BarcodeRecord[],
+
+    productExtensions: [
+      { productId: pSteel, trackingType: 'lot' as const, hasVariants: false, attributes: [], expiryWarningDays: 0, rotationMethod: 'FIFO' as const },
+      { productId: pRod, trackingType: 'lot' as const, hasVariants: false, attributes: [], expiryWarningDays: 0, rotationMethod: 'FIFO' as const },
+      { productId: pChair, trackingType: 'serial' as const, hasVariants: true, attributes: [{ id: uid('attr'), name: 'Color', values: ['Black', 'Gray', 'White'] }], expiryWarningDays: 0, rotationMethod: 'FIFO' as const },
+      { productId: pFrame, trackingType: 'none' as const, hasVariants: false, attributes: [], expiryWarningDays: 0, rotationMethod: 'FIFO' as const },
+    ],
+
+    productVariants: [
+      { id: 'var_chair_black', productId: pChair, variantSku: 'FG-CH-010-BLK', barcode: 'SS-VAR-CH010BLK', attributeValues: { Color: 'Black' }, costPrice: 85, salesPrice: 175, active: true, createdAt: '2026-09-01T08:00:00.000Z' },
+      { id: 'var_chair_gray', productId: pChair, variantSku: 'FG-CH-010-GRY', barcode: 'SS-VAR-CH010GRY', attributeValues: { Color: 'Gray' }, costPrice: 85, salesPrice: 170, active: true, createdAt: '2026-09-01T08:00:00.000Z' },
+      { id: 'var_chair_white', productId: pChair, variantSku: 'FG-CH-010-WHT', barcode: 'SS-VAR-CH010WHT', attributeValues: { Color: 'White' }, costPrice: 88, salesPrice: 180, active: false, createdAt: '2026-09-01T08:00:00.000Z' },
+    ] as ProductVariant[],
+
+    lots: [
+      { id: 'lot_steel_001', lotNumber: 'LOT-STEEL-001', productId: pSteel, qty: 40, locationId: locProd, warehouseId: wh1, receivedDate: '2026-09-20', receiptDocId: rec1, notes: 'Batch 1 from MetalsPlus', createdAt: '2026-09-20T09:12:00.000Z' },
+      { id: 'lot_steel_002', lotNumber: 'LOT-STEEL-002', productId: pSteel, qty: 37, locationId: locProd, warehouseId: wh1, receivedDate: '2026-09-20', receiptDocId: rec1, notes: 'Batch 2 from MetalsPlus', createdAt: '2026-09-20T09:12:00.000Z' },
+      { id: 'lot_rod_001', lotNumber: 'LOT-ROD-001', productId: pRod, qty: 12, locationId: locMain, warehouseId: wh1, manufacturingDate: '2026-08-15', expiryDate: '2027-08-15', receivedDate: '2026-09-24', notes: 'Partial receipt PO/00002', createdAt: '2026-09-24T11:00:00.000Z' },
+    ] as Lot[],
+
+    serials: [
+      { id: 'sn_chair_001', serial: 'SN-CH-0001', productId: pChair, variantId: 'var_chair_black', status: 'in_stock', locationId: locMain, warehouseId: wh1, history: [], createdAt: '2026-09-20T10:00:00.000Z' },
+      { id: 'sn_chair_002', serial: 'SN-CH-0002', productId: pChair, variantId: 'var_chair_black', status: 'in_stock', locationId: locMain, warehouseId: wh1, history: [], createdAt: '2026-09-20T10:00:00.000Z' },
+      { id: 'sn_chair_003', serial: 'SN-CH-0003', productId: pChair, variantId: 'var_chair_gray', status: 'reserved', locationId: locMain, warehouseId: wh1, history: [], createdAt: '2026-09-20T10:00:00.000Z' },
+      { id: 'sn_chair_004', serial: 'SN-CH-0004', productId: pChair, variantId: 'var_chair_gray', status: 'delivered', locationId: locMain, warehouseId: wh1, deliveryDocId: del1, customerId: cust1, history: [], createdAt: '2026-09-20T10:00:00.000Z' },
+    ] as SerialNumber[],
+
+    warehouseZones: [
+      { id: 'zone_wh1_receiving', warehouseId: wh1, name: 'Receiving', code: 'WH1/RCV', type: 'receiving', active: true, notes: 'Inbound goods area' },
+      { id: 'zone_wh1_storage', warehouseId: wh1, name: 'Main Storage', code: 'WH1/STG', type: 'storage', active: true, notes: 'Primary storage area' },
+      { id: 'zone_wh1_picking', warehouseId: wh1, name: 'Picking Area', code: 'WH1/PCK', type: 'picking', active: true, notes: 'Pick face zone' },
+      { id: 'zone_wh1_packing', warehouseId: wh1, name: 'Packing Station', code: 'WH1/PKG', type: 'packing', active: true, notes: 'Box and seal area' },
+      { id: 'zone_wh1_shipping', warehouseId: wh1, name: 'Shipping Dock', code: 'WH1/SHP', type: 'shipping', active: true, notes: 'Outbound dispatch dock' },
+      { id: 'zone_wh1_qc', warehouseId: wh1, name: 'Quality Control', code: 'WH1/QC', type: 'quality_control', active: true, notes: 'Inspection area' },
+      { id: 'zone_wh2_storage', warehouseId: wh2, name: 'WH2 Storage', code: 'WH2/STG', type: 'storage', active: true, notes: '' },
+    ] as WarehouseZone[],
+
+    locationExtensions: [
+      { locationId: locIn, zoneId: 'zone_wh1_receiving', capacity: 500, binCode: 'A1', active: true },
+      { locationId: locMain, zoneId: 'zone_wh1_storage', capacity: 1000, binCode: 'B1', active: true },
+      { locationId: locProd, zoneId: 'zone_wh1_picking', capacity: 300, binCode: 'C1', active: true },
+      { locationId: locOut, zoneId: 'zone_wh1_shipping', capacity: 200, binCode: 'D1', active: true },
+      { locationId: locWh2, zoneId: 'zone_wh2_storage', capacity: 800, binCode: 'E1', active: true },
+    ] as LocationExtension[],
+
+    putawayRules: [
+      { id: uid('pa'), warehouseId: wh1, zoneId: 'zone_wh1_storage', locationId: locMain, categoryId: 'cat_raw', priority: 10, active: true, notes: 'Raw materials → Main Store', createdAt: '2026-09-01T08:00:00.000Z' },
+      { id: uid('pa'), warehouseId: wh1, zoneId: 'zone_wh1_storage', locationId: locMain, categoryId: 'cat_fin', priority: 20, active: true, notes: 'Finished goods → Main Store', createdAt: '2026-09-01T08:00:00.000Z' },
+      { id: uid('pa'), warehouseId: wh1, zoneId: 'zone_wh1_picking', locationId: locProd, categoryId: 'cat_comp', priority: 30, active: true, notes: 'Components → Production Rack', createdAt: '2026-09-01T08:00:00.000Z' },
+    ] as PutawayRule[],
+
+    cycleCounts: [
+      {
+        id: 'cc_001',
+        number: 'CC/00001',
+        warehouseId: wh1,
+        locationId: locMain,
+        assignedUserId: userId,
+        scheduledDate: '2026-09-26',
+        status: 'review',
+        notes: 'Monthly cycle count — Main Store',
+        lines: [
+          { id: uid('ccl'), productId: pRod, expected: 12, counted: 11, variance: -1 },
+          { id: uid('ccl'), productId: pChair, expected: 8, counted: 8, variance: 0 },
+          { id: uid('ccl'), productId: pFrame, expected: 30, counted: 32, variance: 2 },
+        ],
+        createdAt: '2026-09-25T08:00:00.000Z',
+        createdBy: userId,
+      },
+    ] as CycleCount[],
+
+    pickingOrders: [
+      {
+        id: 'pick_001',
+        number: 'PICK/00001',
+        method: 'single',
+        status: 'in_progress',
+        warehouseId: wh1,
+        documentIds: [del1],
+        lines: [
+          {
+            id: uid('pkl'),
+            documentId: del1,
+            productId: pSteel,
+            qtyTodo: 20,
+            qtyDone: 20,
+            sourceLocationId: locProd,
+            confirmed: true,
+          },
+        ],
+        assignedUserId: userId,
+        scheduledDate: '2026-09-22',
+        notes: 'Pick for delivery WH/OUT/00001',
+        createdAt: '2026-09-22T10:00:00.000Z',
+      },
+    ] as PickingOrder[],
+
+    packages: [
+      {
+        id: 'pkg_001',
+        packageNumber: 'PKG-0001',
+        deliveryDocId: del1,
+        type: 'Box',
+        weight: 20,
+        length: 60,
+        width: 40,
+        height: 30,
+        status: 'sealed',
+        productLines: [{ productId: pSteel, qty: 20 }],
+        createdAt: '2026-09-22T12:00:00.000Z',
+        sealedAt: '2026-09-22T13:30:00.000Z',
+      },
+    ] as Package[],
+
+    shipments: [
+      {
+        id: 'ship_001',
+        number: 'SHIP/00001',
+        deliveryDocId: del1,
+        carrier: 'FedEx',
+        trackingNumber: 'FX-9841023847',
+        shippingMethod: 'Ground',
+        shippedDate: '2026-09-22',
+        estimatedDelivery: '2026-09-24',
+        status: 'delivered',
+        notes: 'Delivered on time',
+        createdAt: '2026-09-22T14:00:00.000Z',
+        updatedAt: '2026-09-24T16:00:00.000Z',
+      },
+    ] as Shipment[],
   }
 }

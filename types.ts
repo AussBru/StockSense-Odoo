@@ -271,4 +271,275 @@ export interface AppState {
   salesOrders: SalesOrder[]
   reservations: StockReservation[]
   returnOrders: ReturnOrder[]
+
+  // Warehouse Operations Addon (v3)
+  barcodeRecords: BarcodeRecord[]
+  productExtensions: ProductExtension[]
+  productVariants: ProductVariant[]
+  lots: Lot[]
+  serials: SerialNumber[]
+  warehouseZones: WarehouseZone[]
+  locationExtensions: LocationExtension[]
+  putawayRules: PutawayRule[]
+  cycleCounts: CycleCount[]
+  pickingOrders: PickingOrder[]
+  packages: Package[]
+  shipments: Shipment[]
 }
+
+
+// ============================================================
+// WAREHOUSE OPERATIONS ADDON — DOMAIN TYPES
+// ============================================================
+
+// ---------- BARCODE ----------
+
+export type BarcodeFormat = 'CODE128' | 'EAN13' | 'QR'
+
+export interface BarcodeRecord {
+  id: string
+  barcode: string
+  format: BarcodeFormat
+  entityType: 'product' | 'variant' | 'warehouse' | 'location' | 'lot' | 'serial' | 'purchaseOrder' | 'salesOrder' | 'delivery' | 'receipt'
+  entityId: string
+  createdAt: string
+}
+
+// ---------- PRODUCT VARIANTS ----------
+
+export interface ProductAttribute {
+  id: string
+  name: string          // e.g. "Color", "Size"
+  values: string[]      // e.g. ["Red", "Blue", "Green"]
+}
+
+export type TrackingType = 'none' | 'lot' | 'serial'
+
+export interface ProductVariant {
+  id: string
+  productId: string
+  variantSku: string
+  barcode: string
+  attributeValues: Record<string, string>   // { Color: "Black", Size: "M" }
+  costPrice: number
+  salesPrice: number
+  active: boolean
+  createdAt: string
+}
+
+// Extend Product with optional variant support + tracking
+// Added as optional fields so existing products continue to work
+
+export interface ProductExtension {
+  productId: string
+  trackingType: TrackingType
+  hasVariants: boolean
+  attributes: ProductAttribute[]
+  expiryWarningDays: number   // days before expiry to warn
+  rotationMethod: 'FIFO' | 'FEFO'  // per-product override
+}
+
+// ---------- LOT / BATCH TRACKING ----------
+
+export type LotStatus = 'normal' | 'expiring_soon' | 'expired'
+
+export interface Lot {
+  id: string
+  lotNumber: string
+  productId: string
+  variantId?: string
+  qty: number
+  locationId: string
+  warehouseId: string
+  manufacturingDate?: string
+  expiryDate?: string
+  supplierId?: string
+  receivedDate: string
+  receiptDocId?: string
+  notes: string
+  createdAt: string
+}
+
+// ---------- SERIAL NUMBER TRACKING ----------
+
+export type SerialStatus = 'in_stock' | 'reserved' | 'delivered' | 'returned' | 'scrapped'
+
+export interface SerialNumber {
+  id: string
+  serial: string
+  productId: string
+  variantId?: string
+  status: SerialStatus
+  locationId: string
+  warehouseId: string
+  receiptDocId?: string
+  deliveryDocId?: string
+  customerId?: string
+  history: SerialMovement[]
+  createdAt: string
+}
+
+export interface SerialMovement {
+  id: string
+  date: string
+  fromLocationId: string | null
+  toLocationId: string | null
+  documentId: string | null
+  documentNumber: string
+  note: string
+  userId: string
+}
+
+// ---------- WAREHOUSE ZONES ----------
+
+export type ZoneType =
+  | 'receiving'
+  | 'quality_control'
+  | 'storage'
+  | 'picking'
+  | 'packing'
+  | 'shipping'
+  | 'returns'
+  | 'scrap'
+
+export interface WarehouseZone {
+  id: string
+  warehouseId: string
+  name: string
+  code: string
+  type: ZoneType
+  active: boolean
+  notes: string
+}
+
+// Extend Location with zone and bin support (optional, backward-compatible)
+export interface LocationExtension {
+  locationId: string
+  zoneId?: string
+  capacity?: number       // max units
+  binCode?: string        // e.g. "A1-B2"
+  active: boolean
+}
+
+// ---------- PUTAWAY RULES ----------
+
+export interface PutawayRule {
+  id: string
+  warehouseId: string
+  zoneId?: string
+  locationId: string
+  productId?: string      // match specific product
+  categoryId?: string     // or match category
+  priority: number        // lower = higher priority
+  active: boolean
+  notes: string
+  createdAt: string
+}
+
+// ---------- CYCLE COUNTS ----------
+
+export type CycleCountStatus = 'draft' | 'assigned' | 'counting' | 'review' | 'approved' | 'posted'
+
+export interface CycleCountLine {
+  id: string
+  productId: string
+  variantId?: string
+  lotId?: string
+  expected: number
+  counted: number | null
+  variance: number | null
+}
+
+export interface CycleCount {
+  id: string
+  number: string
+  warehouseId: string
+  locationId: string
+  assignedUserId: string
+  scheduledDate: string
+  completedDate?: string
+  status: CycleCountStatus
+  notes: string
+  lines: CycleCountLine[]
+  adjustmentDocId?: string   // generated adjustment after posting
+  createdAt: string
+  createdBy: string
+}
+
+// ---------- PICKING ----------
+
+export type PickingMethod = 'single' | 'batch' | 'wave'
+export type PickingStatus = 'draft' | 'in_progress' | 'done' | 'canceled'
+
+export interface PickingLine {
+  id: string
+  documentId: string
+  productId: string
+  variantId?: string
+  lotId?: string
+  serialId?: string
+  qtyTodo: number
+  qtyDone: number
+  sourceLocationId: string
+  suggestedLocationId?: string
+  pickerId?: string
+  scannedProductBarcode?: string
+  scannedLocationBarcode?: string
+  confirmed: boolean
+}
+
+export interface PickingOrder {
+  id: string
+  number: string
+  method: PickingMethod
+  status: PickingStatus
+  warehouseId: string
+  documentIds: string[]   // linked delivery doc IDs
+  lines: PickingLine[]
+  assignedUserId: string
+  scheduledDate: string
+  notes: string
+  createdAt: string
+  completedAt?: string
+}
+
+// ---------- PACKING ----------
+
+export type PackageStatus = 'open' | 'packed' | 'sealed'
+
+export interface Package {
+  id: string
+  packageNumber: string
+  deliveryDocId: string
+  type: string            // Box, Pallet, Envelope …
+  weight?: number
+  length?: number
+  width?: number
+  height?: number
+  status: PackageStatus
+  productLines: { productId: string; variantId?: string; lotId?: string; serialId?: string; qty: number }[]
+  createdAt: string
+  sealedAt?: string
+}
+
+// ---------- SHIPPING ----------
+
+export type ShipmentStatus = 'pending' | 'shipped' | 'in_transit' | 'delivered' | 'failed'
+
+export interface Shipment {
+  id: string
+  number?: string
+  deliveryDocId: string
+  carrier: string
+  trackingNumber: string
+  shippingMethod: string
+  shippedDate?: string
+  estimatedDelivery?: string
+  status: ShipmentStatus
+  notes: string
+  createdAt: string
+  updatedAt: string
+}
+
+// ---------- EXTENDED APP STATE ADDITIONS (kept for reference) ----------
+// All fields are now part of AppState directly above.

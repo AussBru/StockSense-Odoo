@@ -1,4 +1,4 @@
-import type { AppState, Document, DocStatus, DocType, Location, Product, Vendor } from '../types'
+import type { AppState, Document, DocStatus, DocType, Location, Product, Vendor, Lot, LotStatus, SerialNumber } from '../types'
 
 export function isOnHand(location: Location | undefined): boolean {
   return location?.type === 'internal'
@@ -273,50 +273,50 @@ export const STATUS_LABEL: Record<DocStatus, string> = {
 export function statusClass(status: DocStatus | string): string {
   switch (status) {
     case 'draft':
-      return 'bg-slate-100 text-slate-700'
+      return 'bg-surface-2 text-fg'
     case 'waiting':
-      return 'bg-amber-100 text-amber-800'
+      return 'bg-$1-100 text-$1-800 dark:bg-$1-500/20 dark:text-$1-300'
     case 'ready':
-      return 'bg-sky-100 text-sky-800'
+      return 'bg-$1-100 text-$1-800 dark:bg-$1-500/20 dark:text-$1-300'
     case 'done':
     case 'received':
     case 'delivered':
     case 'active':
     case 'completed':
-      return 'bg-emerald-100 text-emerald-800'
+      return 'bg-$1-100 text-$1-800 dark:bg-$1-500/20 dark:text-$1-300'
     case 'canceled':
     case 'inactive':
     case 'rejected':
-      return 'bg-rose-100 text-rose-800'
+      return 'bg-$1-100 text-$1-800 dark:bg-$1-500/20 dark:text-$1-300'
     case 'sent':
     case 'confirmed':
     case 'reserved':
-      return 'bg-indigo-100 text-indigo-800'
+      return 'bg-$1-100 text-$1-800 dark:bg-$1-500/20 dark:text-$1-300'
     case 'partial':
     case 'picking':
     case 'packed':
-      return 'bg-purple-100 text-purple-800'
+      return 'bg-$1-100 text-$1-800 dark:bg-$1-500/20 dark:text-$1-300'
     case 'shipped':
-      return 'bg-blue-100 text-blue-800'
+      return 'bg-$1-100 text-$1-800 dark:bg-$1-500/20 dark:text-$1-300'
     default:
-      return 'bg-slate-100 text-slate-700'
+      return 'bg-surface-2 text-fg'
   }
 }
 
 export function typeClass(type: DocType | string): string {
   switch (type) {
     case 'receipt':
-      return 'bg-indigo-50 text-indigo-700'
+      return 'bg-$1-50 text-$1-700 dark:bg-$1-500/15 dark:text-$1-300'
     case 'delivery':
-      return 'bg-fuchsia-50 text-fuchsia-700'
+      return 'bg-$1-50 text-$1-700 dark:bg-$1-500/15 dark:text-$1-300'
     case 'internal':
-      return 'bg-cyan-50 text-cyan-800'
+      return 'bg-$1-50 text-$1-800 dark:bg-$1-500/15 dark:text-$1-300'
     case 'adjustment':
-      return 'bg-orange-50 text-orange-800'
+      return 'bg-$1-50 text-$1-800 dark:bg-$1-500/15 dark:text-$1-300'
     case 'return':
-      return 'bg-purple-50 text-purple-700'
+      return 'bg-$1-50 text-$1-700 dark:bg-$1-500/15 dark:text-$1-300'
     default:
-      return 'bg-slate-100 text-slate-700'
+      return 'bg-surface-2 text-fg'
   }
 }
 
@@ -370,3 +370,264 @@ export function matchesFilters(
 }
 
 export const UOMS = ['Units', 'kg', 'g', 'm', 'Box', 'Pallet']
+
+// ============================================================
+// WAREHOUSE OPERATIONS ADDON — LOT / SERIAL / FIFO / FEFO
+// ============================================================
+
+// Re-export AppState alias to avoid re-import in callers
+type S = AppState
+
+// ---------- LOT HELPERS ----------
+
+export function getLotStatus(lot: Lot, warningDays = 30): LotStatus {
+  if (!lot.expiryDate) return 'normal'
+  const now = Date.now()
+  const expiry = new Date(lot.expiryDate).getTime()
+  const warning = warningDays * 24 * 60 * 60 * 1000
+  if (now >= expiry) return 'expired'
+  if (expiry - now <= warning) return 'expiring_soon'
+  return 'normal'
+}
+
+export function lotStatusClass(status: LotStatus): string {
+  switch (status) {
+    case 'expired': return 'bg-rose-100 text-rose-800 dark:bg-rose-500/20 dark:text-rose-300'
+    case 'expiring_soon': return 'bg-amber-100 text-amber-800 dark:bg-amber-500/20 dark:text-amber-300'
+    default: return 'bg-emerald-100 text-emerald-800 dark:bg-emerald-500/20 dark:text-emerald-300'
+  }
+}
+
+export function lotStatusLabel(status: LotStatus): string {
+  switch (status) {
+    case 'expired': return 'Expired'
+    case 'expiring_soon': return 'Expiring Soon'
+    default: return 'Normal'
+  }
+}
+
+/** All lots for a product, optionally filtered by location */
+export function lotsForProduct(state: S, productId: string, locationId?: string): Lot[] {
+  return state.lots.filter(
+    (l) => l.productId === productId && (!locationId || l.locationId === locationId),
+  )
+}
+
+/** Total qty across lots for a product/location */
+export function lotQtyTotal(state: S, productId: string, locationId?: string): number {
+  return lotsForProduct(state, productId, locationId).reduce((sum, l) => sum + l.qty, 0)
+}
+
+/** Expiring lots across all products (within warningDays) */
+export function expiringLots(state: S, warningDays = 30): Array<{ lot: Lot; status: LotStatus }> {
+  return state.lots
+    .map((lot) => ({ lot, status: getLotStatus(lot, warningDays) }))
+    .filter(({ status }) => status !== 'normal')
+    .sort((a, b) => {
+      const aExp = a.lot.expiryDate ? new Date(a.lot.expiryDate).getTime() : Infinity
+      const bExp = b.lot.expiryDate ? new Date(b.lot.expiryDate).getTime() : Infinity
+      return aExp - bExp
+    })
+}
+
+// ---------- FIFO ----------
+
+/**
+ * FIFO: Returns lots sorted by receivedDate ascending (oldest first).
+ * Use the first lot(s) until qty is filled.
+ */
+export function fifoLots(state: S, productId: string, locationId?: string): Lot[] {
+  return lotsForProduct(state, productId, locationId)
+    .filter((l) => l.qty > 0)
+    .sort((a, b) => new Date(a.receivedDate).getTime() - new Date(b.receivedDate).getTime())
+}
+
+/** FIFO picking plan: returns list of { lot, qtyToUse } to fulfil requiredQty */
+export function fifoPickPlan(
+  state: S,
+  productId: string,
+  requiredQty: number,
+  locationId?: string,
+): Array<{ lot: Lot; qtyToUse: number }> {
+  const sorted = fifoLots(state, productId, locationId)
+  const plan: Array<{ lot: Lot; qtyToUse: number }> = []
+  let remaining = requiredQty
+  for (const lot of sorted) {
+    if (remaining <= 0) break
+    const use = Math.min(lot.qty, remaining)
+    plan.push({ lot, qtyToUse: use })
+    remaining -= use
+  }
+  return plan
+}
+
+// ---------- FEFO ----------
+
+/**
+ * FEFO: Returns lots sorted by expiryDate ascending (nearest expiry first).
+ * Lots with no expiry date are pushed to the end.
+ */
+export function fefoLots(state: S, productId: string, locationId?: string): Lot[] {
+  return lotsForProduct(state, productId, locationId)
+    .filter((l) => l.qty > 0)
+    .sort((a, b) => {
+      const aExp = a.expiryDate ? new Date(a.expiryDate).getTime() : Infinity
+      const bExp = b.expiryDate ? new Date(b.expiryDate).getTime() : Infinity
+      return aExp - bExp
+    })
+}
+
+/** FEFO picking plan */
+export function fefoPickPlan(
+  state: S,
+  productId: string,
+  requiredQty: number,
+  locationId?: string,
+): Array<{ lot: Lot; qtyToUse: number }> {
+  const sorted = fefoLots(state, productId, locationId)
+  const plan: Array<{ lot: Lot; qtyToUse: number }> = []
+  let remaining = requiredQty
+  for (const lot of sorted) {
+    if (remaining <= 0) break
+    const use = Math.min(lot.qty, remaining)
+    plan.push({ lot, qtyToUse: use })
+    remaining -= use
+  }
+  return plan
+}
+
+/**
+ * Returns the best picking plan based on a product's configured rotation method.
+ * Falls back to FIFO if no extension configured.
+ */
+export function getPickPlan(
+  state: S,
+  productId: string,
+  requiredQty: number,
+  locationId?: string,
+): Array<{ lot: Lot; qtyToUse: number }> {
+  const ext = state.productExtensions.find((e) => e.productId === productId)
+  const method = ext?.rotationMethod ?? 'FIFO'
+  return method === 'FEFO'
+    ? fefoPickPlan(state, productId, requiredQty, locationId)
+    : fifoPickPlan(state, productId, requiredQty, locationId)
+}
+
+// ---------- SERIAL HELPERS ----------
+
+export function serialsForProduct(state: S, productId: string): SerialNumber[] {
+  return state.serials.filter((sn) => sn.productId === productId)
+}
+
+export function availableSerials(state: S, productId: string, locationId?: string): SerialNumber[] {
+  return state.serials.filter(
+    (sn) =>
+      sn.productId === productId &&
+      (sn.status === 'in_stock' || sn.status === 'reserved') &&
+      (!locationId || sn.locationId === locationId),
+  )
+}
+
+export function serialByNumber(state: S, serial: string): SerialNumber | undefined {
+  return state.serials.find((sn) => sn.serial === serial)
+}
+
+// ---------- ZONE / LOCATION HELPERS ----------
+
+export function zonesForWarehouse(state: S, warehouseId: string) {
+  return state.warehouseZones.filter((z) => z.warehouseId === warehouseId && z.active)
+}
+
+export function locationsForZone(state: S, zoneId: string) {
+  return state.locationExtensions
+    .filter((le) => le.zoneId === zoneId)
+    .map((le) => state.locations.find((l) => l.id === le.locationId))
+    .filter(Boolean)
+}
+
+/** Capacity utilisation % for a location */
+export function locationCapacityPct(state: S, locationId: string): number {
+  const ext = state.locationExtensions.find((e) => e.locationId === locationId)
+  if (!ext?.capacity || ext.capacity === 0) return 0
+  const onHand = state.quants
+    .filter((q) => q.locationId === locationId)
+    .reduce((sum, q) => sum + q.qty, 0)
+  return Math.min(100, Math.round((onHand / ext.capacity) * 100))
+}
+
+// ---------- CYCLE COUNT HELPERS ----------
+
+export function cycleCountSummary(state: S) {
+  const total = state.cycleCounts.length
+  const byStatus = state.cycleCounts.reduce(
+    (acc, cc) => { acc[cc.status] = (acc[cc.status] ?? 0) + 1; return acc },
+    {} as Record<string, number>,
+  )
+  return { total, byStatus }
+}
+
+// ---------- WAREHOUSE DASHBOARD METRICS ----------
+
+export function warehouseDashboardMetrics(state: S, warehouseId: string) {
+  const today = new Date().toISOString().slice(0, 10)
+
+  const whDocs = state.documents.filter((d) => d.warehouseId === warehouseId)
+
+  const inboundToday = whDocs.filter(
+    (d) => d.type === 'receipt' && d.scheduledDate === today && d.status !== 'canceled',
+  ).length
+
+  const outboundToday = whDocs.filter(
+    (d) => d.type === 'delivery' && d.scheduledDate === today && d.status !== 'canceled',
+  ).length
+
+  const pendingReceiving = whDocs.filter(
+    (d) => d.type === 'receipt' && (d.status === 'draft' || d.status === 'ready' || d.status === 'waiting'),
+  ).length
+
+  const pendingPicking = state.pickingOrders.filter(
+    (p) => p.warehouseId === warehouseId && (p.status === 'draft' || p.status === 'in_progress'),
+  ).length
+
+  const pendingPacking = state.packages.filter((pkg) => {
+    const doc = state.documents.find((d) => d.id === pkg.deliveryDocId)
+    return doc?.warehouseId === warehouseId && pkg.status !== 'sealed'
+  }).length
+
+  const pendingShipping = state.shipments.filter((sh) => {
+    const doc = state.documents.find((d) => d.id === sh.deliveryDocId)
+    return doc?.warehouseId === warehouseId && sh.status === 'pending'
+  }).length
+
+  const activeCycleCounts = state.cycleCounts.filter(
+    (cc) => cc.warehouseId === warehouseId && cc.status !== 'posted' && cc.status !== 'draft',
+  ).length
+
+  const zones = state.warehouseZones.filter((z) => z.warehouseId === warehouseId && z.active)
+
+  const expiring = expiringLots(state, 30).filter((e) => e.lot.warehouseId === warehouseId)
+
+  // Stock by zone
+  const stockByZone = zones.map((zone) => {
+    const zoneLocs = state.locationExtensions
+      .filter((le) => le.zoneId === zone.id)
+      .map((le) => le.locationId)
+    const qty = state.quants
+      .filter((q) => zoneLocs.includes(q.locationId))
+      .reduce((sum, q) => sum + q.qty, 0)
+    return { zone, qty }
+  })
+
+  return {
+    inboundToday,
+    outboundToday,
+    pendingReceiving,
+    pendingPicking,
+    pendingPacking,
+    pendingShipping,
+    activeCycleCounts,
+    expiringLotsCount: expiring.length,
+    stockByZone,
+    zones,
+  }
+}

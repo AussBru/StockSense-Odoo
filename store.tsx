@@ -4,15 +4,31 @@ import { availableStock, qtyAt } from './lib/inventory'
 import { generateOtp, hashPassword, nowIso, uid } from './lib/utils'
 import type {
   AppState,
+  BarcodeFormat,
+  BarcodeRecord,
   Category,
+  CycleCount,
+  CycleCountLine,
+  CycleCountStatus,
   Customer,
   Document,
   DocumentLine,
   DocType,
   Location,
+  LocationExtension,
+  Lot,
+  Package,
+  PickingLine,
+  PickingMethod,
+  PickingOrder,
+  PickingStatus,
   Product,
+  ProductAttribute,
+  ProductExtension,
+  ProductVariant,
   PurchaseOrder,
   PurchaseOrderLine,
+  PutawayRule,
   ReorderRule,
   ReturnDestination,
   ReturnLine,
@@ -22,14 +38,22 @@ import type {
   SalesOrder,
   SalesOrderLine,
   SalesOrderStatus,
+  SerialMovement,
+  SerialNumber,
+  SerialStatus,
+  Shipment,
+  ShipmentStatus,
   StockReservation,
+  TrackingType,
   User,
   Vendor,
   Warehouse,
+  WarehouseZone,
+  ZoneType,
 } from './types'
 
 const KEY_V1 = 'stocksense-v1'
-const KEY = 'stocksense-v2'
+const KEY = 'stocksense-v3'
 
 const PREFIX: Record<DocType, string> = {
   receipt: 'WH/IN',
@@ -69,18 +93,26 @@ function loadState(): AppState {
         quants: parsed.quants || seed.quants,
         documents: parsed.documents || seed.documents,
         ledger: parsed.ledger || seed.ledger,
-        sequences: {
-          ...seed.sequences,
-          ...(parsed.sequences || {}),
-        },
+        sequences: { ...seed.sequences, ...(parsed.sequences || {}) },
         vendors: parsed.vendors && parsed.vendors.length ? parsed.vendors : seed.vendors,
         customers: parsed.customers && parsed.customers.length ? parsed.customers : seed.customers,
-        purchaseOrders:
-          parsed.purchaseOrders && parsed.purchaseOrders.length ? parsed.purchaseOrders : seed.purchaseOrders,
+        purchaseOrders: parsed.purchaseOrders && parsed.purchaseOrders.length ? parsed.purchaseOrders : seed.purchaseOrders,
         salesOrders: parsed.salesOrders && parsed.salesOrders.length ? parsed.salesOrders : seed.salesOrders,
         reservations: parsed.reservations || seed.reservations,
-        returnOrders:
-          parsed.returnOrders && parsed.returnOrders.length ? parsed.returnOrders : seed.returnOrders,
+        returnOrders: parsed.returnOrders && parsed.returnOrders.length ? parsed.returnOrders : seed.returnOrders,
+        // v3 warehouse operations (safe defaults for existing data)
+        barcodeRecords: parsed.barcodeRecords || seed.barcodeRecords || [],
+        productExtensions: parsed.productExtensions || seed.productExtensions || [],
+        productVariants: parsed.productVariants || seed.productVariants || [],
+        lots: parsed.lots || seed.lots || [],
+        serials: parsed.serials || seed.serials || [],
+        warehouseZones: parsed.warehouseZones || seed.warehouseZones || [],
+        locationExtensions: parsed.locationExtensions || seed.locationExtensions || [],
+        putawayRules: parsed.putawayRules || seed.putawayRules || [],
+        cycleCounts: parsed.cycleCounts || seed.cycleCounts || [],
+        pickingOrders: parsed.pickingOrders || seed.pickingOrders || [],
+        packages: parsed.packages || seed.packages || [],
+        shipments: parsed.shipments || seed.shipments || [],
       }
       localStorage.setItem(KEY, JSON.stringify(merged))
       return merged
@@ -199,6 +231,61 @@ export type StoreApi = {
     nextStatus: string,
     dispositions?: Record<string, ReturnDestination>,
   ) => string | null
+
+  // ── Warehouse Operations Addon ──────────────────────────────
+
+  // Barcodes
+  generateBarcode: (entityType: BarcodeRecord['entityType'], entityId: string, format?: BarcodeFormat) => string
+  lookupBarcode: (barcode: string) => BarcodeRecord | null
+  assignBarcode: (entityType: BarcodeRecord['entityType'], entityId: string, barcode: string, format?: BarcodeFormat) => string | null
+
+  // Product extensions (tracking type, variants config)
+  saveProductExtension: (ext: Omit<ProductExtension, 'productId'> & { productId: string }) => void
+
+  // Variants
+  saveVariant: (variant: Omit<ProductVariant, 'id' | 'createdAt'> & { id?: string }) => string
+  deleteVariant: (id: string) => void
+  toggleVariantActive: (id: string) => void
+
+  // Lots
+  saveLot: (lot: Omit<Lot, 'id' | 'createdAt'> & { id?: string }) => string
+  deleteLot: (id: string) => void
+  receiveLot: (lot: Omit<Lot, 'id' | 'createdAt'>) => string
+
+  // Serials
+  saveSerial: (serial: Omit<SerialNumber, 'id' | 'createdAt' | 'history'> & { id?: string }) => string | { error: string }
+  moveSerial: (id: string, toLocationId: string, docId: string | null, docNumber: string, note: string) => string | null
+  deliverSerial: (id: string, customerId: string, deliveryDocId: string, deliveryDocNumber: string) => string | null
+
+  // Warehouse Zones
+  saveZone: (zone: Omit<WarehouseZone, 'id'> & { id?: string }) => string
+  deleteZone: (id: string) => void
+
+  // Location Extensions
+  saveLocationExtension: (ext: LocationExtension) => void
+
+  // Putaway Rules
+  savePutawayRule: (rule: Omit<PutawayRule, 'id' | 'createdAt'> & { id?: string }) => string
+  deletePutawayRule: (id: string) => void
+  suggestPutaway: (productId: string, warehouseId: string, categoryId?: string) => string | null
+
+  // Cycle Counts
+  saveCycleCount: (cc: Partial<CycleCount> & { warehouseId: string; locationId: string }) => string
+  advanceCycleCount: (id: string, nextStatus: CycleCountStatus, lines?: CycleCountLine[]) => string | null
+  postCycleCount: (id: string) => string | null
+
+  // Picking
+  savePickingOrder: (order: Partial<PickingOrder> & { warehouseId: string; documentIds: string[] }) => string
+  advancePickingOrder: (id: string, nextStatus: PickingStatus) => string | null
+  confirmPickingLine: (pickingId: string, lineId: string, qtyDone: number, serialId?: string, lotId?: string) => string | null
+
+  // Packing
+  savePackage: (pkg: Omit<Package, 'id' | 'createdAt'> & { id?: string }) => string
+  sealPackage: (id: string) => string | null
+
+  // Shipping
+  saveShipment: (shipment: Omit<Shipment, 'id' | 'createdAt' | 'updatedAt'> & { id?: string }) => string
+  advanceShipmentStatus: (id: string, nextStatus: ShipmentStatus) => string | null
 }
 
 const StoreContext = createContext<StoreApi | null>(null)
@@ -1438,6 +1525,575 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       return error
     }
 
+    // ── WAREHOUSE OPERATIONS ADDON ──────────────────────────────────────────
+
+    // ----- BARCODES -----
+
+    const generateBarcode: StoreApi['generateBarcode'] = (entityType, entityId, format = 'CODE128') => {
+      const existing = state.barcodeRecords.find((b) => b.entityId === entityId && b.entityType === entityType)
+      if (existing) return existing.barcode
+      const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'
+      const rand = Array.from({ length: 12 }, () => chars[Math.floor(Math.random() * chars.length)]).join('')
+      const barcode = `SS-${entityType.slice(0, 3).toUpperCase()}-${rand}`
+      const record: BarcodeRecord = {
+        id: uid('bc'),
+        barcode,
+        format,
+        entityType,
+        entityId,
+        createdAt: nowIso(),
+      }
+      setState((s) => ({ ...s, barcodeRecords: [...s.barcodeRecords, record] }))
+      return barcode
+    }
+
+    const lookupBarcode: StoreApi['lookupBarcode'] = (barcode) => {
+      return state.barcodeRecords.find((b) => b.barcode === barcode) ?? null
+    }
+
+    const assignBarcode: StoreApi['assignBarcode'] = (entityType, entityId, barcode, format = 'CODE128') => {
+      const duplicate = state.barcodeRecords.find(
+        (b) => b.barcode === barcode && (b.entityId !== entityId || b.entityType !== entityType),
+      )
+      if (duplicate) return 'Barcode already assigned to another entity.'
+      const record: BarcodeRecord = { id: uid('bc'), barcode, format, entityType, entityId, createdAt: nowIso() }
+      setState((s) => {
+        const filtered = s.barcodeRecords.filter((b) => !(b.entityId === entityId && b.entityType === entityType))
+        return { ...s, barcodeRecords: [...filtered, record] }
+      })
+      return null
+    }
+
+    // ----- PRODUCT EXTENSIONS -----
+
+    const saveProductExtension: StoreApi['saveProductExtension'] = (ext) => {
+      setState((s) => {
+        const existing = s.productExtensions.find((e) => e.productId === ext.productId)
+        const list = existing
+          ? s.productExtensions.map((e) => (e.productId === ext.productId ? { ...e, ...ext } : e))
+          : [...s.productExtensions, ext]
+        return { ...s, productExtensions: list }
+      })
+    }
+
+    // ----- VARIANTS -----
+
+    const saveVariant: StoreApi['saveVariant'] = (input) => {
+      let createdId = input.id
+      setState((s) => {
+        const id = input.id || uid('var')
+        createdId = id
+        const exists = s.productVariants.some((v) => v.id === id)
+        const variant: ProductVariant = {
+          id,
+          productId: input.productId,
+          variantSku: input.variantSku,
+          barcode: input.barcode,
+          attributeValues: input.attributeValues,
+          costPrice: input.costPrice,
+          salesPrice: input.salesPrice,
+          active: input.active ?? true,
+          createdAt: exists ? (s.productVariants.find((v) => v.id === id)?.createdAt ?? nowIso()) : nowIso(),
+        }
+        const list = exists ? s.productVariants.map((v) => (v.id === id ? variant : v)) : [...s.productVariants, variant]
+        return { ...s, productVariants: list }
+      })
+      return createdId!
+    }
+
+    const deleteVariant: StoreApi['deleteVariant'] = (id) => {
+      setState((s) => ({ ...s, productVariants: s.productVariants.filter((v) => v.id !== id) }))
+    }
+
+    const toggleVariantActive: StoreApi['toggleVariantActive'] = (id) => {
+      setState((s) => ({
+        ...s,
+        productVariants: s.productVariants.map((v) => (v.id === id ? { ...v, active: !v.active } : v)),
+      }))
+    }
+
+    // ----- LOTS -----
+
+    const saveLot: StoreApi['saveLot'] = (input) => {
+      let createdId = input.id
+      setState((s) => {
+        const id = input.id || uid('lot')
+        createdId = id
+        const exists = s.lots.some((l) => l.id === id)
+        const lot: Lot = { ...input, id, createdAt: exists ? (s.lots.find((l) => l.id === id)?.createdAt ?? nowIso()) : nowIso() }
+        const list = exists ? s.lots.map((l) => (l.id === id ? lot : l)) : [...s.lots, lot]
+        return { ...s, lots: list }
+      })
+      return createdId!
+    }
+
+    const deleteLot: StoreApi['deleteLot'] = (id) => {
+      setState((s) => ({ ...s, lots: s.lots.filter((l) => l.id !== id) }))
+    }
+
+    const receiveLot: StoreApi['receiveLot'] = (input) => {
+      const id = uid('lot')
+      const lot: Lot = { ...input, id, createdAt: nowIso() }
+      setState((s) => ({ ...s, lots: [...s.lots, lot] }))
+      return id
+    }
+
+    // ----- SERIALS -----
+
+    const saveSerial: StoreApi['saveSerial'] = (input) => {
+      let result: string | { error: string } = input.id || ''
+      setState((s) => {
+        const id = input.id || uid('sn')
+        const duplicate = s.serials.find((sn) => sn.serial === input.serial && sn.id !== id)
+        if (duplicate) {
+          result = { error: `Serial number "${input.serial}" already exists.` }
+          return s
+        }
+        const exists = s.serials.some((sn) => sn.id === id)
+        const serial: SerialNumber = {
+          id,
+          serial: input.serial,
+          productId: input.productId,
+          variantId: input.variantId,
+          status: input.status,
+          locationId: input.locationId,
+          warehouseId: input.warehouseId,
+          receiptDocId: input.receiptDocId,
+          deliveryDocId: input.deliveryDocId,
+          customerId: input.customerId,
+          history: exists ? (s.serials.find((sn) => sn.id === id)?.history ?? []) : [],
+          createdAt: exists ? (s.serials.find((sn) => sn.id === id)?.createdAt ?? nowIso()) : nowIso(),
+        }
+        result = id
+        const list = exists ? s.serials.map((sn) => (sn.id === id ? serial : sn)) : [...s.serials, serial]
+        return { ...s, serials: list }
+      })
+      return result
+    }
+
+    const moveSerial: StoreApi['moveSerial'] = (id, toLocationId, docId, docNumber, note) => {
+      let error: string | null = null
+      setState((s) => {
+        const sn = s.serials.find((x) => x.id === id)
+        if (!sn) { error = 'Serial not found.'; return s }
+        const move: SerialMovement = {
+          id: uid('snm'),
+          date: nowIso(),
+          fromLocationId: sn.locationId,
+          toLocationId,
+          documentId: docId,
+          documentNumber: docNumber,
+          note,
+          userId: s.sessionUserId ?? 'system',
+        }
+        return {
+          ...s,
+          serials: s.serials.map((x) => x.id === id ? { ...x, locationId: toLocationId, history: [move, ...x.history] } : x),
+        }
+      })
+      return error
+    }
+
+    const deliverSerial: StoreApi['deliverSerial'] = (id, customerId, deliveryDocId, deliveryDocNumber) => {
+      let error: string | null = null
+      setState((s) => {
+        const sn = s.serials.find((x) => x.id === id)
+        if (!sn) { error = 'Serial not found.'; return s }
+        if (sn.status !== 'in_stock' && sn.status !== 'reserved') { error = 'Serial is not available for delivery.'; return s }
+        const customerLoc = s.locations.find((l) => l.type === 'customer')
+        const move: SerialMovement = {
+          id: uid('snm'),
+          date: nowIso(),
+          fromLocationId: sn.locationId,
+          toLocationId: customerLoc?.id ?? null,
+          documentId: deliveryDocId,
+          documentNumber: deliveryDocNumber,
+          note: 'Delivered to customer',
+          userId: s.sessionUserId ?? 'system',
+        }
+        return {
+          ...s,
+          serials: s.serials.map((x) =>
+            x.id === id ? { ...x, status: 'delivered' as SerialStatus, customerId, deliveryDocId, locationId: customerLoc?.id ?? x.locationId, history: [move, ...x.history] } : x,
+          ),
+        }
+      })
+      return error
+    }
+
+    // ----- ZONES -----
+
+    const saveZone: StoreApi['saveZone'] = (input) => {
+      let createdId = input.id
+      setState((s) => {
+        const id = input.id || uid('zone')
+        createdId = id
+        const exists = s.warehouseZones.some((z) => z.id === id)
+        const zone: WarehouseZone = { ...input, id }
+        const list = exists ? s.warehouseZones.map((z) => (z.id === id ? zone : z)) : [...s.warehouseZones, zone]
+        return { ...s, warehouseZones: list }
+      })
+      return createdId!
+    }
+
+    const deleteZone: StoreApi['deleteZone'] = (id) => {
+      setState((s) => ({ ...s, warehouseZones: s.warehouseZones.filter((z) => z.id !== id) }))
+    }
+
+    // ----- LOCATION EXTENSIONS -----
+
+    const saveLocationExtension: StoreApi['saveLocationExtension'] = (ext) => {
+      setState((s) => {
+        const exists = s.locationExtensions.some((e) => e.locationId === ext.locationId)
+        const list = exists
+          ? s.locationExtensions.map((e) => (e.locationId === ext.locationId ? ext : e))
+          : [...s.locationExtensions, ext]
+        return { ...s, locationExtensions: list }
+      })
+    }
+
+    // ----- PUTAWAY RULES -----
+
+    const savePutawayRule: StoreApi['savePutawayRule'] = (input) => {
+      let createdId = input.id
+      setState((s) => {
+        const id = input.id || uid('pa')
+        createdId = id
+        const exists = s.putawayRules.some((r) => r.id === id)
+        const rule: PutawayRule = { ...input, id, createdAt: exists ? (s.putawayRules.find((r) => r.id === id)?.createdAt ?? nowIso()) : nowIso() }
+        const list = exists ? s.putawayRules.map((r) => (r.id === id ? rule : r)) : [...s.putawayRules, rule]
+        return { ...s, putawayRules: list }
+      })
+      return createdId!
+    }
+
+    const deletePutawayRule: StoreApi['deletePutawayRule'] = (id) => {
+      setState((s) => ({ ...s, putawayRules: s.putawayRules.filter((r) => r.id !== id) }))
+    }
+
+    const suggestPutaway: StoreApi['suggestPutaway'] = (productId, warehouseId, categoryId) => {
+      const rules = state.putawayRules
+        .filter((r) => r.active && r.warehouseId === warehouseId)
+        .sort((a, b) => a.priority - b.priority)
+      // Try product-specific first, then category
+      const byProduct = rules.find((r) => r.productId === productId)
+      if (byProduct) return byProduct.locationId
+      if (categoryId) {
+        const byCat = rules.find((r) => r.categoryId === categoryId)
+        if (byCat) return byCat.locationId
+      }
+      const byWh = rules.find((r) => !r.productId && !r.categoryId)
+      return byWh?.locationId ?? null
+    }
+
+    // ----- CYCLE COUNTS -----
+
+    const saveCycleCount: StoreApi['saveCycleCount'] = (input) => {
+      let createdId = input.id
+      setState((s) => {
+        const isNew = !input.id
+        const id = input.id || uid('cc')
+        createdId = id
+        const { number, sequences } = isNew ? nextSeq(s, 'cc', 'CC') : { number: input.number!, sequences: s.sequences }
+        const exists = s.cycleCounts.some((c) => c.id === id)
+        const cc: CycleCount = {
+          id,
+          number: input.number || number,
+          warehouseId: input.warehouseId,
+          locationId: input.locationId,
+          assignedUserId: input.assignedUserId ?? s.sessionUserId ?? '',
+          scheduledDate: input.scheduledDate ?? nowIso().slice(0, 10),
+          completedDate: input.completedDate,
+          status: input.status ?? 'draft',
+          notes: input.notes ?? '',
+          lines: input.lines ?? [],
+          adjustmentDocId: input.adjustmentDocId,
+          createdAt: exists ? (s.cycleCounts.find((c) => c.id === id)?.createdAt ?? nowIso()) : nowIso(),
+          createdBy: input.createdBy ?? s.sessionUserId ?? 'system',
+        }
+        const list = exists ? s.cycleCounts.map((c) => (c.id === id ? cc : c)) : [...s.cycleCounts, cc]
+        return { ...s, cycleCounts: list, sequences }
+      })
+      return createdId!
+    }
+
+    const advanceCycleCount: StoreApi['advanceCycleCount'] = (id, nextStatus, lines) => {
+      let error: string | null = null
+      setState((s) => {
+        const cc = s.cycleCounts.find((c) => c.id === id)
+        if (!cc) { error = 'Cycle count not found.'; return s }
+
+        // When moving to counting, auto-populate lines from current stock
+        let updatedLines = lines ?? cc.lines
+        if (nextStatus === 'counting' && (!updatedLines || updatedLines.length === 0)) {
+          const locQuants = s.quants.filter((q) => q.locationId === cc.locationId)
+          updatedLines = locQuants.map((q) => ({
+            id: uid('ccl'),
+            productId: q.productId,
+            expected: q.qty,
+            counted: null,
+            variance: null,
+          }))
+        }
+        // If lines provided with counted values, compute variance
+        if (lines) {
+          updatedLines = lines.map((l) => ({
+            ...l,
+            variance: l.counted !== null ? l.counted - l.expected : null,
+          }))
+        }
+        return {
+          ...s,
+          cycleCounts: s.cycleCounts.map((c) =>
+            c.id === id ? { ...c, status: nextStatus, lines: updatedLines } : c,
+          ),
+        }
+      })
+      return error
+    }
+
+    const postCycleCount: StoreApi['postCycleCount'] = (id) => {
+      let error: string | null = null
+      setState((s) => {
+        const cc = s.cycleCounts.find((c) => c.id === id)
+        if (!cc) { error = 'Cycle count not found.'; return s }
+        if (cc.status !== 'approved') { error = 'Cycle count must be approved before posting.'; return s }
+
+        // Generate adjustment document
+        const { number: adjNumber, sequences } = nextNumber(s, 'adjustment')
+        const adjId = uid('doc')
+        const lossLoc = s.locations.find((l) => l.type === 'inventory_loss') || { id: 'loc_loss' }
+
+        const adjLines = cc.lines
+          .filter((l) => l.counted !== null && l.variance !== 0)
+          .map((l) => ({
+            id: uid('ln'),
+            productId: l.productId,
+            qty: l.expected,
+            countedQty: l.counted ?? l.expected,
+          }))
+
+        if (adjLines.length === 0) {
+          // No variance — just mark as posted
+          return {
+            ...s,
+            cycleCounts: s.cycleCounts.map((c) =>
+              c.id === id ? { ...c, status: 'posted', completedDate: nowIso().slice(0, 10) } : c,
+            ),
+          }
+        }
+
+        const adjDoc: Document = {
+          id: adjId,
+          number: adjNumber,
+          type: 'adjustment',
+          status: 'done',
+          warehouseId: cc.warehouseId,
+          sourceLocationId: cc.locationId,
+          destLocationId: lossLoc.id,
+          partnerName: '',
+          scheduledDate: nowIso().slice(0, 10),
+          notes: `Cycle Count ${cc.number}`,
+          lines: adjLines,
+          createdAt: nowIso(),
+          validatedAt: nowIso(),
+          pickDone: false,
+          packDone: false,
+          createdBy: s.sessionUserId ?? 'system',
+        }
+
+        // Apply qty changes
+        let next = s
+        const ledgerAdds = []
+        for (const line of cc.lines) {
+          if (line.counted === null || line.variance === 0) continue
+          const diff = (line.counted ?? line.expected) - line.expected
+          const prod = s.products.find((p) => p.id === line.productId)
+          next = applyQty(next, line.productId, cc.locationId, diff)
+          if (diff < 0) next = applyQty(next, line.productId, lossLoc.id, -diff)
+          ledgerAdds.push({
+            id: uid('led'),
+            date: nowIso(),
+            productId: line.productId,
+            fromLocationId: diff < 0 ? cc.locationId : lossLoc.id,
+            toLocationId: diff < 0 ? lossLoc.id : cc.locationId,
+            qty: Math.abs(diff),
+            type: 'adjustment' as DocType,
+            documentId: adjId,
+            documentNumber: adjNumber,
+            note: `Cycle count adjustment ${cc.number}`,
+            userId: s.sessionUserId ?? 'system',
+            unitCost: prod?.costPrice ?? 30,
+          })
+        }
+
+        return {
+          ...next,
+          documents: [adjDoc, ...next.documents],
+          ledger: [...ledgerAdds, ...next.ledger],
+          sequences,
+          cycleCounts: next.cycleCounts.map((c) =>
+            c.id === id ? { ...c, status: 'posted', completedDate: nowIso().slice(0, 10), adjustmentDocId: adjId } : c,
+          ),
+        }
+      })
+      return error
+    }
+
+    // ----- PICKING -----
+
+    const savePickingOrder: StoreApi['savePickingOrder'] = (input) => {
+      let createdId = input.id
+      setState((s) => {
+        const isNew = !input.id
+        const id = input.id || uid('pick')
+        createdId = id
+        const { number, sequences } = isNew ? nextSeq(s, 'pick', 'PICK') : { number: input.number!, sequences: s.sequences }
+        const exists = s.pickingOrders.some((p) => p.id === id)
+        // Auto-build lines from linked documents
+        let lines: PickingLine[] = input.lines ?? []
+        if (isNew && lines.length === 0) {
+          for (const docId of input.documentIds) {
+            const doc = s.documents.find((d) => d.id === docId)
+            if (!doc) continue
+            for (const dl of doc.lines) {
+              lines.push({
+                id: uid('pkl'),
+                documentId: docId,
+                productId: dl.productId,
+                qtyTodo: dl.qty,
+                qtyDone: 0,
+                sourceLocationId: doc.sourceLocationId,
+                confirmed: false,
+              })
+            }
+          }
+        }
+        const order: PickingOrder = {
+          id,
+          number: input.number || number,
+          method: input.method ?? 'single',
+          status: input.status ?? 'draft',
+          warehouseId: input.warehouseId,
+          documentIds: input.documentIds,
+          lines,
+          assignedUserId: input.assignedUserId ?? s.sessionUserId ?? '',
+          scheduledDate: input.scheduledDate ?? nowIso().slice(0, 10),
+          notes: input.notes ?? '',
+          createdAt: exists ? (s.pickingOrders.find((p) => p.id === id)?.createdAt ?? nowIso()) : nowIso(),
+          completedAt: input.completedAt,
+        }
+        const list = exists ? s.pickingOrders.map((p) => (p.id === id ? order : p)) : [...s.pickingOrders, order]
+        return { ...s, pickingOrders: list, sequences }
+      })
+      return createdId!
+    }
+
+    const advancePickingOrder: StoreApi['advancePickingOrder'] = (id, nextStatus) => {
+      let error: string | null = null
+      setState((s) => {
+        const pick = s.pickingOrders.find((p) => p.id === id)
+        if (!pick) { error = 'Picking order not found.'; return s }
+        if (nextStatus === 'done') {
+          const incomplete = pick.lines.some((l) => !l.confirmed)
+          if (incomplete) { error = 'All lines must be confirmed before completing.'; return s }
+        }
+        return {
+          ...s,
+          pickingOrders: s.pickingOrders.map((p) =>
+            p.id === id ? { ...p, status: nextStatus, completedAt: nextStatus === 'done' ? nowIso() : p.completedAt } : p,
+          ),
+        }
+      })
+      return error
+    }
+
+    const confirmPickingLine: StoreApi['confirmPickingLine'] = (pickingId, lineId, qtyDone, serialId, lotId) => {
+      let error: string | null = null
+      setState((s) => {
+        const pick = s.pickingOrders.find((p) => p.id === pickingId)
+        if (!pick) { error = 'Picking order not found.'; return s }
+        const line = pick.lines.find((l) => l.id === lineId)
+        if (!line) { error = 'Picking line not found.'; return s }
+        if (qtyDone > line.qtyTodo) { error = `Cannot confirm ${qtyDone} — only ${line.qtyTodo} required.`; return s }
+        const updatedLine: PickingLine = { ...line, qtyDone, serialId, lotId, confirmed: true }
+        return {
+          ...s,
+          pickingOrders: s.pickingOrders.map((p) =>
+            p.id === pickingId ? { ...p, lines: p.lines.map((l) => (l.id === lineId ? updatedLine : l)) } : p,
+          ),
+        }
+      })
+      return error
+    }
+
+    // ----- PACKING -----
+
+    const savePackage: StoreApi['savePackage'] = (input) => {
+      let createdId = input.id
+      setState((s) => {
+        const id = input.id || uid('pkg')
+        createdId = id
+        const exists = s.packages.some((p) => p.id === id)
+        const pkg: Package = { ...input, id, createdAt: exists ? (s.packages.find((p) => p.id === id)?.createdAt ?? nowIso()) : nowIso() }
+        const list = exists ? s.packages.map((p) => (p.id === id ? pkg : p)) : [...s.packages, pkg]
+        return { ...s, packages: list }
+      })
+      return createdId!
+    }
+
+    const sealPackage: StoreApi['sealPackage'] = (id) => {
+      let error: string | null = null
+      setState((s) => {
+        const pkg = s.packages.find((p) => p.id === id)
+        if (!pkg) { error = 'Package not found.'; return s }
+        if (pkg.status === 'sealed') { error = 'Package already sealed.'; return s }
+        return {
+          ...s,
+          packages: s.packages.map((p) => p.id === id ? { ...p, status: 'sealed' as const, sealedAt: nowIso() } : p),
+        }
+      })
+      return error
+    }
+
+    // ----- SHIPPING -----
+
+    const saveShipment: StoreApi['saveShipment'] = (input) => {
+      let createdId = input.id
+      setState((s) => {
+        const isNew = !input.id
+        const id = input.id || uid('ship')
+        createdId = id
+        const { number, sequences } = isNew ? nextSeq(s, 'ship', 'SHIP') : { number: input.number ?? `SHIP/${id}`, sequences: s.sequences }
+        const exists = s.shipments.some((sh) => sh.id === id)
+        const shipment: Shipment = {
+          ...input,
+          id,
+          number: input.number ?? number,
+          createdAt: exists ? (s.shipments.find((sh) => sh.id === id)?.createdAt ?? nowIso()) : nowIso(),
+          updatedAt: nowIso(),
+        }
+        const list = exists ? s.shipments.map((sh) => (sh.id === id ? shipment : sh)) : [...s.shipments, shipment]
+        return { ...s, shipments: list, sequences: isNew ? sequences : s.sequences }
+      })
+      return createdId!
+    }
+
+    const advanceShipmentStatus: StoreApi['advanceShipmentStatus'] = (id, nextStatus) => {
+      let error: string | null = null
+      setState((s) => {
+        const sh = s.shipments.find((x) => x.id === id)
+        if (!sh) { error = 'Shipment not found.'; return s }
+        return {
+          ...s,
+          shipments: s.shipments.map((x) =>
+            x.id === id ? { ...x, status: nextStatus, shippedDate: nextStatus === 'shipped' ? (x.shippedDate ?? nowIso().slice(0, 10)) : x.shippedDate, updatedAt: nowIso() } : x,
+          ),
+        }
+      })
+      return error
+    }
+
     return {
       state,
       currentUser,
@@ -1460,8 +2116,6 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       validateDocument,
       cancelDocument,
       defaultLocations,
-
-      // New Addon APIs
       saveVendor,
       toggleVendorStatus,
       deleteVendor,
@@ -1481,6 +2135,36 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       duplicateSalesOrder,
       saveReturnOrder,
       advanceReturnStatus,
+      // Warehouse Operations Addon
+      generateBarcode,
+      lookupBarcode,
+      assignBarcode,
+      saveProductExtension,
+      saveVariant,
+      deleteVariant,
+      toggleVariantActive,
+      saveLot,
+      deleteLot,
+      receiveLot,
+      saveSerial,
+      moveSerial,
+      deliverSerial,
+      saveZone,
+      deleteZone,
+      saveLocationExtension,
+      savePutawayRule,
+      deletePutawayRule,
+      suggestPutaway,
+      saveCycleCount,
+      advanceCycleCount,
+      postCycleCount,
+      savePickingOrder,
+      advancePickingOrder,
+      confirmPickingLine,
+      savePackage,
+      sealPackage,
+      saveShipment,
+      advanceShipmentStatus,
     }
   }, [state, currentUser])
 
