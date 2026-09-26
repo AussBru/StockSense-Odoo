@@ -1,4 +1,33 @@
-export type Role = 'inventory_manager' | 'warehouse_staff'
+export type Role =
+  | 'admin'
+  | 'inventory_manager'
+  | 'warehouse_staff'
+  | 'purchasing_manager'
+  | 'sales_manager'
+  | 'auditor'
+
+export type Permission =
+  | 'dashboard.view'
+  | 'products.view'
+  | 'products.create'
+  | 'products.edit'
+  | 'products.delete'
+  | 'inventory.adjust'
+  | 'inventory.approve'
+  | 'warehouse.manage'
+  | 'purchasing.view'
+  | 'purchasing.create'
+  | 'purchasing.approve'
+  | 'sales.view'
+  | 'sales.create'
+  | 'sales.approve'
+  | 'returns.manage'
+  | 'reports.view'
+  | 'reports.export'
+  | 'users.manage'
+  | 'settings.manage'
+  | 'audit.view'
+
 export type DocType = 'receipt' | 'delivery' | 'internal' | 'adjustment'
 export type DocStatus = 'draft' | 'waiting' | 'ready' | 'done' | 'canceled'
 export type LocationType = 'internal' | 'vendor' | 'customer' | 'inventory_loss'
@@ -10,6 +39,9 @@ export interface User {
   passwordHash: string
   role: Role
   phone: string
+  active?: boolean
+  lastLogin?: string
+  createdAt?: string
 }
 
 export interface Warehouse {
@@ -83,6 +115,10 @@ export interface Document {
   pickDone: boolean
   packDone: boolean
   createdBy: string
+  approvalStatus?: ApprovalStatus
+  approvedBy?: string
+  approvedAt?: string
+  approvalComment?: string
 }
 
 export interface LedgerEntry {
@@ -171,6 +207,10 @@ export interface PurchaseOrder {
   createdAt: string
   updatedAt: string
   receivedDocIds?: string[]
+  approvalStatus?: ApprovalStatus
+  approvedBy?: string
+  approvedAt?: string
+  approvalComment?: string
 }
 
 export type SalesOrderStatus =
@@ -250,6 +290,107 @@ export interface ReturnOrder {
   createdAt: string
   updatedAt: string
   completedAt?: string
+  approvalStatus?: ApprovalStatus
+  approvedBy?: string
+  approvedAt?: string
+  approvalComment?: string
+}
+
+export type ApprovalStatus = 'not_required' | 'pending' | 'approved' | 'rejected'
+
+export interface CompanySettings {
+  name: string
+  legalName: string
+  taxNumber: string
+  email: string
+  phone: string
+  address: string
+  currency: string
+  logoUrl?: string
+  website?: string
+}
+
+export interface InventorySettings {
+  defaultWarehouseId: string
+  negativeStockPolicy: 'disallow' | 'warn'
+  enableLotTracking: boolean
+  enableSerialTracking: boolean
+  expiryAlertDays: number
+  valuationMethod: 'wac' | 'fifo'
+}
+
+export interface ApprovalSettings {
+  enabled: boolean
+  poThreshold: number
+  adjustmentValueThreshold: number
+  returnThreshold: number
+}
+
+export interface AlertRulesConfig {
+  lowStockThresholdDays: number
+  expiryWarningDays: number
+  poOverdueNotice: boolean
+  deliveryDelayNotice: boolean
+  varianceThresholdValue: number
+  maxInventoryValueAlert: number
+}
+
+export type AuditAction =
+  | 'CREATE'
+  | 'UPDATE'
+  | 'DELETE'
+  | 'CONFIRM'
+  | 'PICK'
+  | 'PACK'
+  | 'VALIDATE'
+  | 'CANCEL'
+  | 'LOGIN'
+  | 'LOGOUT'
+  | 'APPROVE'
+  | 'REJECT'
+
+export interface AuditLogEntry {
+  id: string
+  timestamp: string
+  userId: string
+  userName: string
+  userEmail: string
+  userRole: string
+  action: AuditAction
+  entity: string
+  entityId: string
+  documentNumber?: string
+  oldValue?: any
+  newValue?: any
+  metadata?: Record<string, any>
+}
+
+export type NotificationType =
+  | 'LOW_STOCK'
+  | 'OUT_OF_STOCK'
+  | 'STOCKOUT_RISK'
+  | 'PO_OVERDUE'
+  | 'DELIVERY_DELAY'
+  | 'EXPIRY_WARNING'
+  | 'CYCLE_COUNT'
+  | 'APPROVAL_REQUIRED'
+  | 'RETURN_REQUIRED'
+
+export type NotificationSeverity = 'info' | 'warning' | 'error' | 'success'
+
+export interface AppNotification {
+  id: string
+  recipientId?: string
+  type: NotificationType
+  title: string
+  message: string
+  severity: NotificationSeverity
+  read: boolean
+  timestamp: string
+  entityType?: string
+  entityId?: string
+  link?: string
+  dedupKey: string
 }
 
 export interface AppState {
@@ -285,6 +426,14 @@ export interface AppState {
   pickingOrders: PickingOrder[]
   packages: Package[]
   shipments: Shipment[]
+
+  // Enterprise Administration Addon (v4)
+  auditLogs: AuditLogEntry[]
+  notifications: AppNotification[]
+  companySettings: CompanySettings
+  inventorySettings: InventorySettings
+  approvalSettings: ApprovalSettings
+  alertRules: AlertRulesConfig
 }
 
 

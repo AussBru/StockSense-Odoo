@@ -4,6 +4,7 @@ import {
   ArrowLeft,
   CheckCircle2,
   Package,
+  Printer,
   RotateCcw,
   ShieldCheck,
   Truck,
@@ -13,12 +14,17 @@ import { StatusBadge } from '../components/Badges'
 import { inputClass } from '../components/AuthFrame'
 import { useStore } from '../store'
 import type { ReturnDestination } from '../types'
+import { PrintableDocument } from '../components/PrintableDocument'
+import { ActivityTimeline } from '../components/ActivityTimeline'
+import { getProductUnitCost } from '../lib/inventory'
+import { formatMoney } from '../lib/utils'
 
 export function ReturnDetailPage() {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
   const { state, advanceReturnStatus } = useStore()
 
+  const [printModalOpen, setPrintModalOpen] = useState(false)
   const [dispositions, setDispositions] = useState<Record<string, ReturnDestination>>({})
   const [actionError, setActionError] = useState<string | null>(null)
   const [successMsg, setSuccessMsg] = useState<string | null>(null)
@@ -70,8 +76,37 @@ export function ReturnDetailPage() {
   const steps = ret.type === 'customer' ? customerSteps : vendorSteps
   const currentStepIdx = steps.findIndex((s) => s.key === ret.status)
 
+  // Map printable lines
+  const printableLines = ret.lines.map((line) => {
+    const prod = state.products.find((p) => p.id === line.productId)
+    const cost = prod ? getProductUnitCost(prod) : 0
+    return {
+      sku: prod?.sku || '—',
+      name: prod?.name || 'Product Item',
+      qty: line.qty,
+      uom: prod?.uom || 'Units',
+      unitPrice: cost,
+      total: line.qty * cost,
+    }
+  })
+
   return (
     <div className="space-y-6">
+      {/* Printable Document Modal */}
+      <PrintableDocument
+        open={printModalOpen}
+        onClose={() => setPrintModalOpen(false)}
+        docTypeTitle="RETURN NOTE & DISPOSITION"
+        documentNumber={ret.number}
+        status={ret.status.toUpperCase()}
+        date={ret.createdAt.slice(0, 10)}
+        partyTitle={ret.type === 'customer' ? 'Customer' : 'Vendor'}
+        partyName={ret.partnerName}
+        warehouseName={warehouse?.name}
+        lines={printableLines}
+        notes={ret.notes}
+      />
+
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex items-center gap-3">
           <button
@@ -87,7 +122,9 @@ export function ReturnDetailPage() {
               <StatusBadge status={ret.status} />
               <span
                 className={`rounded-full px-2 py-0.5 text-xs font-semibold ${
-                  ret.type === 'customer' ? 'bg-$1-50 text-$1-700 dark:bg-$1-500/15 dark:text-$1-300' : 'bg-$1-50 text-$1-800 dark:bg-$1-500/15 dark:text-$1-300'
+                  ret.type === 'customer'
+                    ? 'bg-accent/10 text-accent'
+                    : 'bg-indigo-500/15 text-indigo-700 dark:text-indigo-300'
                 }`}
               >
                 {ret.type === 'customer' ? 'Customer RMA' : 'Vendor Return'}
@@ -155,7 +192,7 @@ export function ReturnDetailPage() {
                 <button
                   type="button"
                   onClick={() => handleAdvance('approved', 'Approved')}
-                  className="rounded-lg bg-brand px-3.5 py-2 text-sm font-semibold text-accent-fg shadow-sm hover:bg-brand-dark"
+                  className="rounded-lg bg-accent px-3.5 py-2 text-sm font-semibold text-accent-fg shadow-sm hover:bg-accent-hover"
                 >
                   Approve Vendor Return
                 </button>
@@ -173,22 +210,35 @@ export function ReturnDetailPage() {
                 <button
                   type="button"
                   onClick={() => handleAdvance('completed', 'Completed')}
-                  className="rounded-lg bg-emerald-600 px-3.5 py-2 text-sm font-semibold text-white shadow-sm hover:bg-emerald-700"
+                  className="rounded-lg bg-emerald-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-emerald-700"
                 >
                   Complete RMA
                 </button>
               )}
             </>
           )}
+
+          <button
+            type="button"
+            onClick={() => setPrintModalOpen(true)}
+            className="inline-flex items-center gap-1.5 rounded-lg border border-line bg-surface px-3.5 py-2 text-sm font-semibold text-fg hover:bg-surface-2"
+          >
+            <Printer size={15} />
+            Print Note
+          </button>
         </div>
       </div>
 
       {actionError ? (
-        <div className="rounded-lg bg-rose-50 p-3.5 text-sm font-medium text-rose-800">{actionError}</div>
+        <div className="rounded-lg bg-rose-50 p-3.5 text-sm font-medium text-rose-800 dark:bg-rose-500/10 dark:text-rose-400">
+          {actionError}
+        </div>
       ) : null}
 
       {successMsg ? (
-        <div className="rounded-lg bg-emerald-50 p-3.5 text-sm font-medium text-emerald-800">{successMsg}</div>
+        <div className="rounded-lg bg-emerald-50 p-3.5 text-sm font-medium text-emerald-800 dark:bg-emerald-500/10 dark:text-emerald-400">
+          {successMsg}
+        </div>
       ) : null}
 
       {/* Lifecycle Progress Bar */}
@@ -203,10 +253,10 @@ export function ReturnDetailPage() {
                 key={s.key}
                 className={`rounded-lg border p-2 text-center text-xs font-semibold transition ${
                   isCurrent
-                    ? 'border-brand bg-brand/10 text-brand'
+                    ? 'border-accent bg-accent/10 text-accent'
                     : isDone
-                    ? 'border-emerald-200 bg-$1-50 text-$1-800 dark:bg-$1-500/15 dark:text-$1-300'
-                    : 'border-line-soft bg-surface-2 text-fg-subtle'
+                    ? 'border-emerald-200 bg-emerald-50 text-emerald-800 dark:border-emerald-800 dark:bg-emerald-500/15 dark:text-emerald-300'
+                    : 'border-line bg-surface-2 text-fg-subtle'
                 }`}
               >
                 <div>{s.label}</div>
@@ -247,9 +297,10 @@ export function ReturnDetailPage() {
         </div>
       </div>
 
-      {/* Returned Line Items & Inspection Disposition */}
-      <div className="space-y-4 rounded-2xl border border-line bg-surface p-5 shadow-sm">
-        <div className="flex items-center justify-between">
+      {/* Main Grid: Products on Left, Activity Timeline on Right */}
+      <div className="grid gap-6 lg:grid-cols-3">
+        {/* Returned Line Items & Inspection Disposition */}
+        <div className="lg:col-span-2 space-y-4 rounded-2xl border border-line bg-surface p-5 shadow-sm">
           <div>
             <h2 className="font-semibold text-fg">Returned Products & Inspection Disposition</h2>
             <p className="text-xs text-fg-subtle">
@@ -257,74 +308,80 @@ export function ReturnDetailPage() {
               loss with full ledger traceability.
             </p>
           </div>
-        </div>
 
-        <div className="overflow-x-auto">
-          <table className="w-full text-left text-sm">
-            <thead className="border-b border-line-soft bg-surface-2 text-xs font-semibold uppercase text-fg-muted">
-              <tr>
-                <th className="px-4 py-3">Product</th>
-                <th className="px-4 py-3">SKU</th>
-                <th className="px-4 py-3 text-right">Return Qty</th>
-                <th className="px-4 py-3">Reported Reason</th>
-                <th className="px-4 py-3">Inspection Destination</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-line-soft">
-              {ret.lines.map((line) => {
-                const prod = state.products.find((p) => p.id === line.productId)
-                const currentDest = dispositions[line.id] || line.disposition || line.destination || 'restock'
+          <div className="overflow-x-auto">
+            <table className="w-full text-left text-sm">
+              <thead className="border-b border-line bg-surface-2 text-xs font-semibold uppercase text-fg-muted">
+                <tr>
+                  <th className="px-4 py-3">Product</th>
+                  <th className="px-4 py-3 text-right">Quantity</th>
+                  <th className="px-4 py-3">Reason</th>
+                  <th className="px-4 py-3">Inspection Disposition</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-line">
+                {ret.lines.map((line) => {
+                  const prod = state.products.find((p) => p.id === line.productId)
+                  const isLocked = ret.status === 'completed'
+                  const currentDisp = dispositions[line.productId] || line.destination || 'restock'
 
-                return (
-                  <tr key={line.id} className="hover:bg-surface-2/50">
-                    <td className="px-4 py-3 font-medium text-fg">
-                      {prod ? (
-                        <Link to={`/products/${prod.id}`} className="hover:underline">
-                          {prod.name}
-                        </Link>
-                      ) : (
-                        'Product'
-                      )}
-                    </td>
-                    <td className="px-4 py-3 font-mono text-xs text-fg-muted">{prod?.sku || '—'}</td>
-                    <td className="px-4 py-3 text-right font-bold text-fg">{line.qty}</td>
-                    <td className="px-4 py-3 text-xs text-fg-soft">{line.reason || 'General return'}</td>
-                    <td className="px-4 py-3">
-                      {ret.status === 'completed' ? (
-                        <span className="rounded-full bg-surface-2 px-2.5 py-1 text-xs font-semibold uppercase text-fg">
-                          {line.disposition || line.destination}
-                        </span>
-                      ) : (
-                        <select
-                          className={`${inputClass} py-1 text-xs font-medium`}
-                          value={currentDest}
-                          onChange={(e) =>
-                            setDispositions({
-                              ...dispositions,
-                              [line.id]: e.target.value as ReturnDestination,
-                            })
-                          }
-                        >
-                          <option value="restock">Restock to Inventory (Good Condition)</option>
-                          <option value="damaged">Damaged Goods (Defective)</option>
-                          <option value="scrap">Scrap (Dispose)</option>
-                          <option value="inventory_loss">Inventory Loss (Virtual Write-off)</option>
-                        </select>
-                      )}
-                    </td>
-                  </tr>
-                )
-              })}
-            </tbody>
-          </table>
-        </div>
-
-        {ret.notes ? (
-          <div className="border-t border-line-soft pt-3 text-xs text-fg-muted">
-            <span className="font-semibold text-fg">RMA Notes: </span>
-            {ret.notes}
+                  return (
+                    <tr key={line.id} className="hover:bg-surface-2/40">
+                      <td className="px-4 py-3">
+                        <div className="font-medium text-fg">{prod?.name || 'Unknown Product'}</div>
+                        <div className="font-mono text-xs text-fg-muted">SKU: {prod?.sku || '—'}</div>
+                      </td>
+                      <td className="px-4 py-3 text-right font-bold text-fg">{line.qty}</td>
+                      <td className="px-4 py-3 text-xs text-fg-muted">{line.reason || 'Not specified'}</td>
+                      <td className="px-4 py-3">
+                        {isLocked ? (
+                          <span className="font-mono text-xs font-semibold uppercase text-fg">
+                            {line.destination}
+                          </span>
+                        ) : (
+                          <select
+                            className={`${inputClass} text-xs`}
+                            value={currentDisp}
+                            onChange={(e) =>
+                              setDispositions({
+                                ...dispositions,
+                                [line.productId]: e.target.value as ReturnDestination,
+                              })
+                            }
+                          >
+                            <option value="restock">Restock (Salable Internal)</option>
+                            <option value="damaged">Damaged (Hold for Repair)</option>
+                            <option value="scrap">Scrap (Virtual Disposal)</option>
+                            <option value="inventory_loss">Inventory Loss (Write-off)</option>
+                          </select>
+                        )}
+                      </td>
+                    </tr>
+                  )
+                })}
+              </tbody>
+            </table>
           </div>
-        ) : null}
+
+          {ret.notes ? (
+            <div className="border-t border-line pt-3 text-xs text-fg-muted">
+              <span className="font-semibold text-fg">RMA Notes: </span>
+              {ret.notes}
+            </div>
+          ) : null}
+        </div>
+
+        {/* Activity Timeline */}
+        <div className="rounded-2xl border border-line bg-surface p-5 shadow-sm space-y-4">
+          <ActivityTimeline
+            entityId={ret.id}
+            documentNumber={ret.number}
+            fallbackDates={{
+              createdAt: ret.createdAt,
+              completedAt: ret.completedAt,
+            }}
+          />
+        </div>
       </div>
     </div>
   )

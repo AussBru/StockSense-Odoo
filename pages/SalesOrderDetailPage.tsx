@@ -17,6 +17,9 @@ import { StatusBadge } from '../components/Badges'
 import { availableStock, qtyByWarehouse, totalOnHand, totalReserved } from '../lib/inventory'
 import { useStore } from '../store'
 import type { SalesOrderStatus } from '../types'
+import { PrintableDocument } from '../components/PrintableDocument'
+import { ActivityTimeline } from '../components/ActivityTimeline'
+import { formatMoney } from '../lib/utils'
 
 export function SalesOrderDetailPage() {
   const { id } = useParams<{ id: string }>()
@@ -30,6 +33,7 @@ export function SalesOrderDetailPage() {
     duplicateSalesOrder,
   } = useStore()
 
+  const [printModalOpen, setPrintModalOpen] = useState(false)
   const [actionError, setActionError] = useState<string | null>(null)
   const [successMsg, setSuccessMsg] = useState<string | null>(null)
 
@@ -117,8 +121,47 @@ export function SalesOrderDetailPage() {
   ]
   const currentStepIdx = statusOrder.indexOf(so.status)
 
+  // Map printable lines
+  const printableLines = so.lines.map((line) => {
+    const prod = state.products.find((p) => p.id === line.productId)
+    return {
+      sku: prod?.sku || '—',
+      name: prod?.name || 'Item',
+      qty: line.qty,
+      uom: prod?.uom || 'Units',
+      unitPrice: line.unitPrice,
+      taxRate: line.taxRate,
+      subtotal: line.subtotal,
+      tax: line.tax,
+      total: line.total,
+    }
+  })
+
   return (
     <div className="space-y-6">
+      {/* Printable Document Modal */}
+      <PrintableDocument
+        open={printModalOpen}
+        onClose={() => setPrintModalOpen(false)}
+        docTypeTitle="SALES ORDER"
+        documentNumber={so.number}
+        status={so.status.toUpperCase()}
+        date={so.orderDate}
+        dueDate={so.deliveryDate}
+        partyTitle="Customer"
+        partyName={customer?.name}
+        partyAddress={customer?.address}
+        partyContact={`${customer?.email || ''} (${customer?.phone || ''})`}
+        partyTaxNumber={customer?.taxNumber}
+        warehouseName={warehouse?.name}
+        lines={printableLines}
+        subtotal={so.subtotal}
+        tax={so.tax}
+        total={so.total}
+        currency={so.currency || 'USD'}
+        notes={so.notes}
+      />
+
       {/* Top Header Bar */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex items-center gap-3">
@@ -144,7 +187,7 @@ export function SalesOrderDetailPage() {
               <button
                 type="button"
                 onClick={handleConfirm}
-                className="inline-flex items-center gap-1.5 rounded-lg bg-brand px-3.5 py-2 text-sm font-semibold text-accent-fg shadow-sm hover:bg-brand-dark"
+                className="inline-flex items-center gap-1.5 rounded-lg bg-accent px-3.5 py-2 text-sm font-semibold text-accent-fg shadow-sm hover:bg-accent-hover"
               >
                 <CheckCircle2 size={16} />
                 Confirm Order
@@ -225,11 +268,11 @@ export function SalesOrderDetailPage() {
 
           <button
             type="button"
-            onClick={() => window.print()}
+            onClick={() => setPrintModalOpen(true)}
             className="inline-flex items-center gap-1.5 rounded-lg border border-line bg-surface px-3.5 py-2 text-sm font-semibold text-fg hover:bg-surface-2"
           >
             <Printer size={16} />
-            Print
+            Print Layout
           </button>
 
           {so.status !== 'delivered' && so.status !== 'canceled' && (
@@ -246,14 +289,14 @@ export function SalesOrderDetailPage() {
       </div>
 
       {actionError ? (
-        <div className="flex items-center gap-2 rounded-xl border border-rose-200 bg-rose-50 p-4 text-sm font-medium text-rose-800">
+        <div className="flex items-center gap-2 rounded-xl border border-rose-200 bg-rose-50 p-4 text-sm font-medium text-rose-800 dark:bg-rose-500/10 dark:text-rose-400">
           <ShieldAlert size={18} className="shrink-0 text-rose-600" />
           <span>{actionError}</span>
         </div>
       ) : null}
 
       {successMsg ? (
-        <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-4 text-sm font-medium text-emerald-800">
+        <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-4 text-sm font-medium text-emerald-800 dark:bg-emerald-500/10 dark:text-emerald-400">
           {successMsg}
         </div>
       ) : null}
@@ -262,7 +305,7 @@ export function SalesOrderDetailPage() {
       <div className="rounded-2xl border border-line bg-surface p-5 shadow-sm">
         <div className="text-xs font-semibold uppercase tracking-wider text-fg-muted">Order & Fulfillment Lifecycle</div>
         {so.status === 'canceled' ? (
-          <div className="mt-3 flex items-center gap-2 rounded-lg bg-rose-50 p-3 text-sm font-medium text-rose-700">
+          <div className="mt-3 flex items-center gap-2 rounded-lg bg-rose-50 p-3 text-sm font-medium text-rose-700 dark:bg-rose-500/10 dark:text-rose-400">
             <XCircle size={16} />
             This sales order was cancelled.
           </div>
@@ -276,10 +319,10 @@ export function SalesOrderDetailPage() {
                   key={s.key}
                   className={`rounded-lg border p-2 text-center text-xs font-semibold transition ${
                     isCurrent
-                      ? 'border-brand bg-brand/10 text-brand shadow-sm'
+                      ? 'border-accent bg-accent/10 text-accent shadow-sm'
                       : isDone
-                      ? 'border-emerald-200 bg-$1-50 text-$1-800 dark:bg-$1-500/15 dark:text-$1-300'
-                      : 'border-line-soft bg-surface-2 text-fg-subtle'
+                      ? 'border-emerald-200 bg-emerald-50 text-emerald-800 dark:border-emerald-800 dark:bg-emerald-500/15 dark:text-emerald-300'
+                      : 'border-line bg-surface-2 text-fg-subtle'
                   }`}
                 >
                   <div>{s.label}</div>
@@ -315,7 +358,7 @@ export function SalesOrderDetailPage() {
           </div>
           <div className="mt-1.5 flex justify-between text-xs">
             <span className="text-fg-muted">Expected Delivery:</span>
-            <span className="font-semibold text-indigo-700">{so.deliveryDate}</span>
+            <span className="font-semibold text-accent">{so.deliveryDate}</span>
           </div>
           <div className="mt-1.5 flex justify-between text-xs">
             <span className="text-fg-muted">Tax Registration:</span>
@@ -324,92 +367,107 @@ export function SalesOrderDetailPage() {
         </div>
       </div>
 
-      {/* Product Line Items & Stock Availability Matrix */}
-      <div className="space-y-4 rounded-2xl border border-line bg-surface p-5 shadow-sm">
-        <div className="flex items-center justify-between">
-          <div>
-            <h2 className="font-semibold text-fg">Products & Stock Reservation Matrix</h2>
-            <p className="text-xs text-fg-subtle">
-              Formula: Available = On Hand - Reserved. Stock is verified during reservation.
-            </p>
+      {/* Main Content Grid: Lines on Left, Activity Timeline on Right */}
+      <div className="grid gap-6 lg:grid-cols-3">
+        {/* Product Line Items & Stock Availability Matrix */}
+        <div className="lg:col-span-2 space-y-4 rounded-2xl border border-line bg-surface p-5 shadow-sm">
+          <div className="flex items-center justify-between">
+            <div>
+              <h2 className="font-semibold text-fg">Products & Stock Reservation Matrix</h2>
+              <p className="text-xs text-fg-subtle">
+                Formula: Available = On Hand - Reserved. Stock is verified during reservation.
+              </p>
+            </div>
+            <span className="text-xs font-semibold text-fg-muted">{so.lines.length} Line Items</span>
           </div>
-          <span className="text-xs font-semibold text-fg-muted">{so.lines.length} Line Items</span>
+
+          <div className="overflow-x-auto">
+            <table className="w-full text-left text-sm">
+              <thead className="border-b border-line bg-surface-2 text-xs font-semibold uppercase text-fg-muted">
+                <tr>
+                  <th className="px-4 py-3">Product</th>
+                  <th className="px-4 py-3">SKU</th>
+                  <th className="px-4 py-3 text-right">Order Qty</th>
+                  <th className="px-4 py-3 text-right text-fg-muted">On Hand</th>
+                  <th className="px-4 py-3 text-right text-purple-600 dark:text-purple-400">Reserved</th>
+                  <th className="px-4 py-3 text-right text-emerald-600 dark:text-emerald-400">Available</th>
+                  <th className="px-4 py-3 text-right">Unit Price</th>
+                  <th className="px-4 py-3 text-right">Discount</th>
+                  <th className="px-4 py-3 text-right">Total</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-line">
+                {so.lines.map((line) => {
+                  const prod = state.products.find((p) => p.id === line.productId)
+                  const onHand = prod ? (so.warehouseId ? qtyByWarehouse(state, prod.id, so.warehouseId) : totalOnHand(state, prod.id)) : 0
+                  const reserved = prod ? totalReserved(state, prod.id, so.warehouseId) : 0
+                  const available = prod ? availableStock(state, prod.id, so.warehouseId) : 0
+                  const isShortage = available < line.qty && so.status === 'confirmed'
+
+                  return (
+                    <tr key={line.id} className={`hover:bg-surface-2/40 ${isShortage ? 'bg-rose-50/50 dark:bg-rose-950/20' : ''}`}>
+                      <td className="px-4 py-3 font-medium text-fg">
+                        {prod ? (
+                          <Link to={`/products/${prod.id}`} className="hover:underline">
+                            {prod.name}
+                          </Link>
+                        ) : (
+                          'Custom Product'
+                        )}
+                        {isShortage ? (
+                          <div className="text-[11px] font-semibold text-rose-600 dark:text-rose-400">Shortage for reservation!</div>
+                        ) : null}
+                      </td>
+                      <td className="px-4 py-3 font-mono text-xs text-fg-muted">{prod?.sku || '—'}</td>
+                      <td className="px-4 py-3 text-right font-bold text-fg">{line.qty}</td>
+                      <td className="px-4 py-3 text-right font-medium text-fg-muted">{onHand}</td>
+                      <td className="px-4 py-3 text-right font-medium text-purple-600 dark:text-purple-400">{reserved}</td>
+                      <td className="px-4 py-3 text-right font-bold text-emerald-600 dark:text-emerald-400">{available}</td>
+                      <td className="px-4 py-3 text-right text-fg">{formatMoney(line.unitPrice)}</td>
+                      <td className="px-4 py-3 text-right text-fg-muted">{line.discount}%</td>
+                      <td className="px-4 py-3 text-right font-semibold text-fg">{formatMoney(line.total)}</td>
+                    </tr>
+                  )
+                })}
+              </tbody>
+            </table>
+          </div>
+
+          {/* Totals Summary */}
+          <div className="flex flex-col items-end gap-1.5 border-t border-line pt-4 text-sm">
+            <div className="flex w-64 justify-between text-fg-muted">
+              <span>Subtotal:</span>
+              <span className="font-semibold text-fg">{formatMoney(so.subtotal)}</span>
+            </div>
+            <div className="flex w-64 justify-between text-fg-muted">
+              <span>Tax:</span>
+              <span className="font-semibold text-fg">{formatMoney(so.tax)}</span>
+            </div>
+            <div className="flex w-64 justify-between border-t border-line pt-1.5 text-base font-bold text-fg">
+              <span>Order Total:</span>
+              <span className="text-accent">{formatMoney(so.total)}</span>
+            </div>
+          </div>
+
+          {so.notes ? (
+            <div className="border-t border-line pt-3 text-xs text-fg-muted">
+              <span className="font-semibold text-fg">Special Instructions: </span>
+              {so.notes}
+            </div>
+          ) : null}
         </div>
 
-        <div className="overflow-x-auto">
-          <table className="w-full text-left text-sm">
-            <thead className="border-b border-line-soft bg-surface-2 text-xs font-semibold uppercase text-fg-muted">
-              <tr>
-                <th className="px-4 py-3">Product</th>
-                <th className="px-4 py-3">SKU</th>
-                <th className="px-4 py-3 text-right">Order Qty</th>
-                <th className="px-4 py-3 text-right text-fg-soft">On Hand</th>
-                <th className="px-4 py-3 text-right text-purple-700">Reserved</th>
-                <th className="px-4 py-3 text-right text-emerald-700">Available</th>
-                <th className="px-4 py-3 text-right">Unit Price</th>
-                <th className="px-4 py-3 text-right">Discount</th>
-                <th className="px-4 py-3 text-right">Total</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-line-soft">
-              {so.lines.map((line) => {
-                const prod = state.products.find((p) => p.id === line.productId)
-                const onHand = prod ? (so.warehouseId ? qtyByWarehouse(state, prod.id, so.warehouseId) : totalOnHand(state, prod.id)) : 0
-                const reserved = prod ? totalReserved(state, prod.id, so.warehouseId) : 0
-                const available = prod ? availableStock(state, prod.id, so.warehouseId) : 0
-                const isShortage = available < line.qty && so.status === 'confirmed'
-
-                return (
-                  <tr key={line.id} className={`hover:bg-surface-2/50 ${isShortage ? 'bg-rose-50/50' : ''}`}>
-                    <td className="px-4 py-3 font-medium text-fg">
-                      {prod ? (
-                        <Link to={`/products/${prod.id}`} className="hover:underline">
-                          {prod.name}
-                        </Link>
-                      ) : (
-                        'Custom Product'
-                      )}
-                      {isShortage ? (
-                        <div className="text-[11px] font-semibold text-rose-600">Shortage for reservation!</div>
-                      ) : null}
-                    </td>
-                    <td className="px-4 py-3 font-mono text-xs text-fg-muted">{prod?.sku || '—'}</td>
-                    <td className="px-4 py-3 text-right font-bold text-fg">{line.qty}</td>
-                    <td className="px-4 py-3 text-right font-medium text-fg-soft">{onHand}</td>
-                    <td className="px-4 py-3 text-right font-medium text-purple-700">{reserved}</td>
-                    <td className="px-4 py-3 text-right font-bold text-emerald-700">{available}</td>
-                    <td className="px-4 py-3 text-right text-fg">${line.unitPrice.toFixed(2)}</td>
-                    <td className="px-4 py-3 text-right text-fg-muted">{line.discount}%</td>
-                    <td className="px-4 py-3 text-right font-semibold text-fg">${line.total.toFixed(2)}</td>
-                  </tr>
-                )
-              })}
-            </tbody>
-          </table>
+        {/* Activity Timeline */}
+        <div className="rounded-2xl border border-line bg-surface p-5 shadow-sm space-y-4">
+          <ActivityTimeline
+            entityId={so.id}
+            documentNumber={so.number}
+            fallbackDates={{
+              createdAt: so.createdAt,
+              sentAt: so.status !== 'draft' ? so.orderDate : undefined,
+            }}
+          />
         </div>
-
-        {/* Totals Summary */}
-        <div className="flex flex-col items-end gap-1.5 border-t border-line-soft pt-4 text-sm">
-          <div className="flex w-64 justify-between text-fg-soft">
-            <span>Subtotal:</span>
-            <span className="font-semibold text-fg">${so.subtotal.toFixed(2)}</span>
-          </div>
-          <div className="flex w-64 justify-between text-fg-soft">
-            <span>Tax:</span>
-            <span className="font-semibold text-fg">${so.tax.toFixed(2)}</span>
-          </div>
-          <div className="flex w-64 justify-between border-t border-line pt-1.5 text-base font-bold text-fg">
-            <span>Order Total:</span>
-            <span className="text-emerald-700">${so.total.toFixed(2)}</span>
-          </div>
-        </div>
-
-        {so.notes ? (
-          <div className="border-t border-line-soft pt-3 text-xs text-fg-muted">
-            <span className="font-semibold text-fg">Special Instructions: </span>
-            {so.notes}
-          </div>
-        ) : null}
       </div>
 
       {/* Linked Delivery Document */}
@@ -418,7 +476,7 @@ export function SalesOrderDetailPage() {
           <h2 className="mb-2 font-semibold text-fg">Linked Outbound Delivery Document</h2>
           <Link
             to={`/deliveries/${so.deliveryDocId}`}
-            className="inline-flex items-center gap-2 rounded-lg border border-line bg-surface-2 px-3.5 py-2 text-xs font-semibold text-brand hover:bg-surface-2"
+            className="inline-flex items-center gap-2 rounded-lg border border-line bg-surface-2 px-3.5 py-2 text-xs font-semibold text-accent hover:bg-surface-2/80"
           >
             <Truck size={16} />
             <span>

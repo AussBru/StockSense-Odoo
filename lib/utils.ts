@@ -31,6 +31,11 @@ export function formatDate(value: string): string {
   })
 }
 
+export function formatMoney(val: number | undefined | null, currency = 'USD'): string {
+  if (val === undefined || val === null || isNaN(val)) return '$0.00'
+  return new Intl.NumberFormat('en-US', { style: 'currency', currency }).format(val)
+}
+
 export function generateOtp(): string {
   return String(Math.floor(100000 + Math.random() * 900000))
 }

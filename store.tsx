@@ -2,11 +2,17 @@ import { createContext, useContext, useEffect, useMemo, useState, type ReactNode
 import { createSeed } from './lib/seed'
 import { availableStock, qtyAt } from './lib/inventory'
 import { generateOtp, hashPassword, nowIso, uid } from './lib/utils'
+import { canUser } from './lib/rbac'
+import { evaluateSystemNotifications } from './lib/notifications'
 import type {
+  AlertRulesConfig,
   AppState,
+  ApprovalSettings,
+  AuditAction,
+  AuditLogEntry,
   BarcodeFormat,
   BarcodeRecord,
-  Category,
+  CompanySettings,
   CycleCount,
   CycleCountLine,
   CycleCountStatus,
@@ -14,16 +20,16 @@ import type {
   Document,
   DocumentLine,
   DocType,
+  InventorySettings,
   Location,
   LocationExtension,
   Lot,
   Package,
+  Permission,
   PickingLine,
-  PickingMethod,
   PickingOrder,
   PickingStatus,
   Product,
-  ProductAttribute,
   ProductExtension,
   ProductVariant,
   PurchaseOrder,
@@ -44,16 +50,16 @@ import type {
   Shipment,
   ShipmentStatus,
   StockReservation,
-  TrackingType,
   User,
   Vendor,
   Warehouse,
   WarehouseZone,
-  ZoneType,
 } from './types'
 
 const KEY_V1 = 'stocksense-v1'
-const KEY = 'stocksense-v3'
+const KEY_V2 = 'stocksense-v2'
+const KEY_V3 = 'stocksense-v3'
+const KEY = 'stocksense-v4'
 
 const PREFIX: Record<DocType, string> = {
   receipt: 'WH/IN',
@@ -65,16 +71,28 @@ const PREFIX: Record<DocType, string> = {
 function loadState(): AppState {
   try {
     let raw = localStorage.getItem(KEY)
-    if (!raw) {
-      const v1 = localStorage.getItem(KEY_V1)
-      if (v1) raw = v1
-    }
+    if (!raw) raw = localStorage.getItem(KEY_V3)
+    if (!raw) raw = localStorage.getItem(KEY_V2)
+    if (!raw) raw = localStorage.getItem(KEY_V1)
 
     if (raw) {
       const parsed = JSON.parse(raw) as Partial<AppState>
       const seed = createSeed()
+
+      // Ensure users has at least the full set of default role users
+      const existingUserIds = new Set((parsed.users || []).map((u) => u.id))
+      const combinedUsers: User[] = [
+        ...(parsed.users || []).map((u) => ({
+          ...u,
+          active: u.active ?? true,
+          createdAt: u.createdAt ?? '2026-01-01T00:00:00.000Z',
+          lastLogin: u.lastLogin,
+        })),
+        ...seed.users.filter((su) => !existingUserIds.has(su.id)),
+      ]
+
       const merged: AppState = {
-        users: parsed.users || seed.users,
+        users: combinedUsers,
         sessionUserId: parsed.sessionUserId ?? seed.sessionUserId,
         pendingOtp: parsed.pendingOtp ?? null,
         warehouses: parsed.warehouses || seed.warehouses,
@@ -100,7 +118,7 @@ function loadState(): AppState {
         salesOrders: parsed.salesOrders && parsed.salesOrders.length ? parsed.salesOrders : seed.salesOrders,
         reservations: parsed.reservations || seed.reservations,
         returnOrders: parsed.returnOrders && parsed.returnOrders.length ? parsed.returnOrders : seed.returnOrders,
-        // v3 warehouse operations (safe defaults for existing data)
+        // v3 warehouse operations
         barcodeRecords: parsed.barcodeRecords || seed.barcodeRecords || [],
         productExtensions: parsed.productExtensions || seed.productExtensions || [],
         productVariants: parsed.productVariants || seed.productVariants || [],
@@ -113,6 +131,13 @@ function loadState(): AppState {
         pickingOrders: parsed.pickingOrders || seed.pickingOrders || [],
         packages: parsed.packages || seed.packages || [],
         shipments: parsed.shipments || seed.shipments || [],
+        // v4 enterprise administration
+        auditLogs: parsed.auditLogs || seed.auditLogs || [],
+        notifications: parsed.notifications || seed.notifications || [],
+        companySettings: parsed.companySettings || seed.companySettings,
+        inventorySettings: parsed.inventorySettings || seed.inventorySettings,
+        approvalSettings: parsed.approvalSettings || seed.approvalSettings,
+        alertRules: parsed.alertRules || seed.alertRules,
       }
       localStorage.setItem(KEY, JSON.stringify(merged))
       return merged
@@ -286,6 +311,36 @@ export type StoreApi = {
   // Shipping
   saveShipment: (shipment: Omit<Shipment, 'id' | 'createdAt' | 'updatedAt'> & { id?: string }) => string
   advanceShipmentStatus: (id: string, nextStatus: ShipmentStatus) => string | null
+
+  // ── Enterprise Administration Addon ─────────────────────────
+  can: (permission: Permission) => { allowed: boolean; reason?: string }
+  saveUser: (input: { id?: string; name: string; email: string; role: Role; phone: string; active?: boolean; password?: string }) => Promise<string | null>
+  toggleUserStatus: (userId: string) => string | null
+  resetUserPassword: (userId: string, newPassword: string) => Promise<string | null>
+  deleteUser: (userId: string) => string | null
+  logAudit: (
+    action: AuditAction,
+    entity: string,
+    entityId: string,
+    documentNumber?: string,
+    oldValue?: any,
+    newValue?: any,
+    metadata?: Record<string, any>,
+  ) => void
+  markNotificationRead: (id: string) => void
+  markAllNotificationsRead: () => void
+  clearNotifications: () => void
+  triggerAlertEvaluation: () => void
+  submitPurchaseOrderForApproval: (id: string) => string | null
+  approvePurchaseOrder: (id: string, comment?: string) => string | null
+  rejectPurchaseOrder: (id: string, comment?: string) => string | null
+  approveDocument: (id: string, comment?: string) => string | null
+  rejectDocument: (id: string, comment?: string) => string | null
+  saveCompanySettings: (settings: CompanySettings) => string | null
+  saveInventorySettings: (settings: InventorySettings) => string | null
+  saveApprovalSettings: (settings: ApprovalSettings) => string | null
+  saveAlertRules: (rules: AlertRulesConfig) => string | null
+  saveSequences: (seqs: Record<string, number>) => string | null
 }
 
 const StoreContext = createContext<StoreApi | null>(null)
@@ -297,6 +352,17 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     persist(state)
   }, [state])
 
+  useEffect(() => {
+    setState((s) => {
+      const fresh = evaluateSystemNotifications(s)
+      if (fresh.length === 0) return s
+      return {
+        ...s,
+        notifications: [...fresh, ...s.notifications],
+      }
+    })
+  }, [])
+
   const currentUser = useMemo(
     () => state.users.find((u) => u.id === state.sessionUserId) ?? null,
     [state.users, state.sessionUserId],
@@ -307,7 +373,29 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       const hash = await hashPassword(password)
       const user = state.users.find((u) => u.email.toLowerCase() === email.trim().toLowerCase())
       if (!user || user.passwordHash !== hash) return 'Invalid email or password.'
-      setState((s) => ({ ...s, sessionUserId: user.id }))
+      if (user.active === false) return 'This account has been deactivated. Please contact an administrator.'
+
+      const now = nowIso()
+      setState((s) => ({
+        ...s,
+        sessionUserId: user.id,
+        users: s.users.map((u) => (u.id === user.id ? { ...u, lastLogin: now } : u)),
+        auditLogs: [
+          {
+            id: uid('aud'),
+            timestamp: now,
+            userId: user.id,
+            userName: user.name,
+            userEmail: user.email,
+            userRole: user.role,
+            action: 'LOGIN',
+            entity: 'Session',
+            entityId: user.id,
+            metadata: { email: user.email },
+          },
+          ...s.auditLogs,
+        ],
+      }))
       return null
     }
 
@@ -323,12 +411,38 @@ export function StoreProvider({ children }: { children: ReactNode }) {
         passwordHash: await hashPassword(input.password),
         role: input.role,
         phone: input.phone.trim(),
+        active: true,
+        createdAt: nowIso(),
+        lastLogin: nowIso(),
       }
       setState((s) => ({ ...s, users: [...s.users, user], sessionUserId: user.id }))
       return null
     }
 
-    const logout = () => setState((s) => ({ ...s, sessionUserId: null }))
+    const logout = () => {
+      const current = currentUser
+      const now = nowIso()
+      setState((s) => ({
+        ...s,
+        sessionUserId: null,
+        auditLogs: current
+          ? [
+              {
+                id: uid('aud'),
+                timestamp: now,
+                userId: current.id,
+                userName: current.name,
+                userEmail: current.email,
+                userRole: current.role,
+                action: 'LOGOUT',
+                entity: 'Session',
+                entityId: current.id,
+              },
+              ...s.auditLogs,
+            ]
+          : s.auditLogs,
+      }))
+    }
 
     const requestOtp: StoreApi['requestOtp'] = async (email) => {
       const user = state.users.find((u) => u.email.toLowerCase() === email.trim().toLowerCase())
@@ -2094,6 +2208,609 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       return error
     }
 
+    // ── Enterprise Administration Addon Implementations ──
+
+    const can: StoreApi['can'] = (permission) => {
+      return canUser(currentUser, permission)
+    }
+
+    const logAudit: StoreApi['logAudit'] = (
+      action,
+      entity,
+      entityId,
+      documentNumber,
+      oldValue,
+      newValue,
+      metadata,
+    ) => {
+      const now = nowIso()
+      const entry: AuditLogEntry = {
+        id: uid('aud'),
+        timestamp: now,
+        userId: currentUser?.id || 'system',
+        userName: currentUser?.name || 'System',
+        userEmail: currentUser?.email || 'system@stocksense.io',
+        userRole: currentUser?.role || 'admin',
+        action,
+        entity,
+        entityId,
+        documentNumber,
+        oldValue,
+        newValue,
+        metadata,
+      }
+      setState((s) => ({
+        ...s,
+        auditLogs: [entry, ...s.auditLogs],
+      }))
+    }
+
+    const saveUser: StoreApi['saveUser'] = async (input) => {
+      const auth = canUser(currentUser, 'users.manage')
+      if (!auth.allowed) return auth.reason!
+
+      if (!input.name.trim() || !input.email.trim()) {
+        return 'Name and email are required.'
+      }
+
+      const email = input.email.trim().toLowerCase()
+      const isNew = !input.id
+
+      if (isNew && (!input.password || input.password.length < 6)) {
+        return 'A password of at least 6 characters is required for new users.'
+      }
+
+      if (isNew && state.users.some((u) => u.email.toLowerCase() === email)) {
+        return 'A user with this email address already exists.'
+      }
+
+      const existing = input.id ? state.users.find((u) => u.id === input.id) : null
+      if (input.id && !existing) {
+        return 'User not found.'
+      }
+
+      let passwordHash = existing?.passwordHash || ''
+      if (input.password && input.password.length >= 6) {
+        passwordHash = await hashPassword(input.password)
+      }
+
+      const now = nowIso()
+      const updatedUser: User = {
+        id: input.id || uid('usr'),
+        name: input.name.trim(),
+        email,
+        passwordHash,
+        role: input.role,
+        phone: input.phone.trim(),
+        active: input.active !== undefined ? input.active : (existing?.active ?? true),
+        createdAt: existing?.createdAt || now,
+        lastLogin: existing?.lastLogin,
+      }
+
+      setState((s) => {
+        const users = isNew
+          ? [updatedUser, ...s.users]
+          : s.users.map((u) => (u.id === updatedUser.id ? updatedUser : u))
+
+        const auditEntry: AuditLogEntry = {
+          id: uid('aud'),
+          timestamp: now,
+          userId: currentUser?.id || 'admin',
+          userName: currentUser?.name || 'Administrator',
+          userEmail: currentUser?.email || 'admin@stocksense.io',
+          userRole: currentUser?.role || 'admin',
+          action: isNew ? 'CREATE' : 'UPDATE',
+          entity: 'User',
+          entityId: updatedUser.id,
+          oldValue: existing
+            ? { name: existing.name, email: existing.email, role: existing.role, active: existing.active }
+            : null,
+          newValue: {
+            name: updatedUser.name,
+            email: updatedUser.email,
+            role: updatedUser.role,
+            active: updatedUser.active,
+          },
+          metadata: { isNew },
+        }
+
+        return {
+          ...s,
+          users,
+          auditLogs: [auditEntry, ...s.auditLogs],
+        }
+      })
+      return null
+    }
+
+    const toggleUserStatus: StoreApi['toggleUserStatus'] = (userId) => {
+      const auth = canUser(currentUser, 'users.manage')
+      if (!auth.allowed) return auth.reason!
+
+      if (userId === currentUser?.id) {
+        return 'You cannot deactivate your own account.'
+      }
+
+      const target = state.users.find((u) => u.id === userId)
+      if (!target) return 'User not found.'
+
+      const nextActive = target.active === false ? true : false
+      const now = nowIso()
+
+      setState((s) => ({
+        ...s,
+        users: s.users.map((u) => (u.id === userId ? { ...u, active: nextActive } : u)),
+        auditLogs: [
+          {
+            id: uid('aud'),
+            timestamp: now,
+            userId: currentUser?.id || 'admin',
+            userName: currentUser?.name || 'Administrator',
+            userEmail: currentUser?.email || 'admin@stocksense.io',
+            userRole: currentUser?.role || 'admin',
+            action: 'UPDATE',
+            entity: 'User',
+            entityId: userId,
+            oldValue: { active: target.active ?? true },
+            newValue: { active: nextActive },
+            metadata: { targetEmail: target.email, action: nextActive ? 'activate' : 'deactivate' },
+          },
+          ...s.auditLogs,
+        ],
+      }))
+      return null
+    }
+
+    const resetUserPassword: StoreApi['resetUserPassword'] = async (userId, newPassword) => {
+      const auth = canUser(currentUser, 'users.manage')
+      if (!auth.allowed) return auth.reason!
+
+      if (!newPassword || newPassword.length < 6) {
+        return 'Password must be at least 6 characters.'
+      }
+
+      const target = state.users.find((u) => u.id === userId)
+      if (!target) return 'User not found.'
+
+      const passwordHash = await hashPassword(newPassword)
+      const now = nowIso()
+
+      setState((s) => ({
+        ...s,
+        users: s.users.map((u) => (u.id === userId ? { ...u, passwordHash } : u)),
+        auditLogs: [
+          {
+            id: uid('aud'),
+            timestamp: now,
+            userId: currentUser?.id || 'admin',
+            userName: currentUser?.name || 'Administrator',
+            userEmail: currentUser?.email || 'admin@stocksense.io',
+            userRole: currentUser?.role || 'admin',
+            action: 'UPDATE',
+            entity: 'User',
+            entityId: userId,
+            metadata: { action: 'password_reset', targetEmail: target.email },
+          },
+          ...s.auditLogs,
+        ],
+      }))
+      return null
+    }
+
+    const deleteUser: StoreApi['deleteUser'] = (userId) => {
+      const auth = canUser(currentUser, 'users.manage')
+      if (!auth.allowed) return auth.reason!
+
+      if (userId === currentUser?.id) {
+        return 'You cannot delete your own account.'
+      }
+
+      const target = state.users.find((u) => u.id === userId)
+      if (!target) return 'User not found.'
+
+      if (target.role === 'admin') {
+        const adminCount = state.users.filter((u) => u.role === 'admin' && u.active !== false).length
+        if (adminCount <= 1) {
+          return 'Cannot delete the only remaining Administrator.'
+        }
+      }
+
+      const now = nowIso()
+      setState((s) => ({
+        ...s,
+        users: s.users.filter((u) => u.id !== userId),
+        auditLogs: [
+          {
+            id: uid('aud'),
+            timestamp: now,
+            userId: currentUser?.id || 'admin',
+            userName: currentUser?.name || 'Administrator',
+            userEmail: currentUser?.email || 'admin@stocksense.io',
+            userRole: currentUser?.role || 'admin',
+            action: 'DELETE',
+            entity: 'User',
+            entityId: userId,
+            oldValue: { name: target.name, email: target.email, role: target.role },
+            metadata: { deletedUser: target.email },
+          },
+          ...s.auditLogs,
+        ],
+      }))
+      return null
+    }
+
+    const markNotificationRead: StoreApi['markNotificationRead'] = (id) => {
+      setState((s) => ({
+        ...s,
+        notifications: s.notifications.map((n) => (n.id === id ? { ...n, read: true } : n)),
+      }))
+    }
+
+    const markAllNotificationsRead: StoreApi['markAllNotificationsRead'] = () => {
+      setState((s) => ({
+        ...s,
+        notifications: s.notifications.map((n) => ({ ...n, read: true })),
+      }))
+    }
+
+    const clearNotifications: StoreApi['clearNotifications'] = () => {
+      setState((s) => ({
+        ...s,
+        notifications: [],
+      }))
+    }
+
+    const triggerAlertEvaluation: StoreApi['triggerAlertEvaluation'] = () => {
+      setState((s) => {
+        const fresh = evaluateSystemNotifications(s)
+        if (fresh.length === 0) return s
+        return {
+          ...s,
+          notifications: [...fresh, ...s.notifications],
+        }
+      })
+    }
+
+    const submitPurchaseOrderForApproval: StoreApi['submitPurchaseOrderForApproval'] = (id) => {
+      const po = state.purchaseOrders.find((p) => p.id === id)
+      if (!po) return 'Purchase order not found.'
+
+      const now = nowIso()
+      setState((s) => ({
+        ...s,
+        purchaseOrders: s.purchaseOrders.map((p) =>
+          p.id === id ? { ...p, approvalStatus: 'pending', updatedAt: now } : p,
+        ),
+        auditLogs: [
+          {
+            id: uid('aud'),
+            timestamp: now,
+            userId: currentUser?.id || 'user',
+            userName: currentUser?.name || 'User',
+            userEmail: currentUser?.email || '',
+            userRole: currentUser?.role || 'warehouse_staff',
+            action: 'CONFIRM',
+            entity: 'PurchaseOrder',
+            entityId: id,
+            documentNumber: po.number,
+            metadata: { total: po.total, action: 'submit_approval' },
+          },
+          ...s.auditLogs,
+        ],
+      }))
+      return null
+    }
+
+    const approvePurchaseOrder: StoreApi['approvePurchaseOrder'] = (id, comment) => {
+      const auth = canUser(currentUser, 'purchasing.approve')
+      if (!auth.allowed) return auth.reason!
+
+      const po = state.purchaseOrders.find((p) => p.id === id)
+      if (!po) return 'Purchase order not found.'
+
+      const now = nowIso()
+      setState((s) => ({
+        ...s,
+        purchaseOrders: s.purchaseOrders.map((p) =>
+          p.id === id
+            ? {
+                ...p,
+                approvalStatus: 'approved',
+                approvedBy: currentUser?.name || 'Approver',
+                approvedAt: now,
+                approvalComment: comment || 'Approved',
+                updatedAt: now,
+              }
+            : p,
+        ),
+        auditLogs: [
+          {
+            id: uid('aud'),
+            timestamp: now,
+            userId: currentUser?.id || 'user',
+            userName: currentUser?.name || 'User',
+            userEmail: currentUser?.email || '',
+            userRole: currentUser?.role || 'admin',
+            action: 'APPROVE',
+            entity: 'PurchaseOrder',
+            entityId: id,
+            documentNumber: po.number,
+            metadata: { total: po.total, comment },
+          },
+          ...s.auditLogs,
+        ],
+      }))
+      return null
+    }
+
+    const rejectPurchaseOrder: StoreApi['rejectPurchaseOrder'] = (id, comment) => {
+      const auth = canUser(currentUser, 'purchasing.approve')
+      if (!auth.allowed) return auth.reason!
+
+      const po = state.purchaseOrders.find((p) => p.id === id)
+      if (!po) return 'Purchase order not found.'
+
+      const now = nowIso()
+      setState((s) => ({
+        ...s,
+        purchaseOrders: s.purchaseOrders.map((p) =>
+          p.id === id
+            ? {
+                ...p,
+                approvalStatus: 'rejected',
+                approvedBy: currentUser?.name || 'Approver',
+                approvedAt: now,
+                approvalComment: comment || 'Rejected',
+                updatedAt: now,
+              }
+            : p,
+        ),
+        auditLogs: [
+          {
+            id: uid('aud'),
+            timestamp: now,
+            userId: currentUser?.id || 'user',
+            userName: currentUser?.name || 'User',
+            userEmail: currentUser?.email || '',
+            userRole: currentUser?.role || 'admin',
+            action: 'REJECT',
+            entity: 'PurchaseOrder',
+            entityId: id,
+            documentNumber: po.number,
+            metadata: { total: po.total, comment },
+          },
+          ...s.auditLogs,
+        ],
+      }))
+      return null
+    }
+
+    const approveDocument: StoreApi['approveDocument'] = (id, comment) => {
+      const auth = canUser(currentUser, 'inventory.approve')
+      if (!auth.allowed) return auth.reason!
+
+      const doc = state.documents.find((d) => d.id === id)
+      if (!doc) return 'Document not found.'
+
+      const now = nowIso()
+      setState((s) => ({
+        ...s,
+        documents: s.documents.map((d) =>
+          d.id === id
+            ? {
+                ...d,
+                approvalStatus: 'approved',
+                approvedBy: currentUser?.name || 'Approver',
+                approvedAt: now,
+                approvalComment: comment || 'Approved',
+              }
+            : d,
+        ),
+        auditLogs: [
+          {
+            id: uid('aud'),
+            timestamp: now,
+            userId: currentUser?.id || 'user',
+            userName: currentUser?.name || 'User',
+            userEmail: currentUser?.email || '',
+            userRole: currentUser?.role || 'admin',
+            action: 'APPROVE',
+            entity: 'Document',
+            entityId: id,
+            documentNumber: doc.number,
+            metadata: { type: doc.type, comment },
+          },
+          ...s.auditLogs,
+        ],
+      }))
+      return null
+    }
+
+    const rejectDocument: StoreApi['rejectDocument'] = (id, comment) => {
+      const auth = canUser(currentUser, 'inventory.approve')
+      if (!auth.allowed) return auth.reason!
+
+      const doc = state.documents.find((d) => d.id === id)
+      if (!doc) return 'Document not found.'
+
+      const now = nowIso()
+      setState((s) => ({
+        ...s,
+        documents: s.documents.map((d) =>
+          d.id === id
+            ? {
+                ...d,
+                approvalStatus: 'rejected',
+                approvedBy: currentUser?.name || 'Approver',
+                approvedAt: now,
+                approvalComment: comment || 'Rejected',
+              }
+            : d,
+        ),
+        auditLogs: [
+          {
+            id: uid('aud'),
+            timestamp: now,
+            userId: currentUser?.id || 'user',
+            userName: currentUser?.name || 'User',
+            userEmail: currentUser?.email || '',
+            userRole: currentUser?.role || 'admin',
+            action: 'REJECT',
+            entity: 'Document',
+            entityId: id,
+            documentNumber: doc.number,
+            metadata: { type: doc.type, comment },
+          },
+          ...s.auditLogs,
+        ],
+      }))
+      return null
+    }
+
+    const saveCompanySettings: StoreApi['saveCompanySettings'] = (settings) => {
+      const auth = canUser(currentUser, 'settings.manage')
+      if (!auth.allowed) return auth.reason!
+
+      const now = nowIso()
+      setState((s) => ({
+        ...s,
+        companySettings: { ...settings },
+        auditLogs: [
+          {
+            id: uid('aud'),
+            timestamp: now,
+            userId: currentUser?.id || 'admin',
+            userName: currentUser?.name || 'Administrator',
+            userEmail: currentUser?.email || 'admin@stocksense.io',
+            userRole: currentUser?.role || 'admin',
+            action: 'UPDATE',
+            entity: 'Settings',
+            entityId: 'company',
+            oldValue: s.companySettings,
+            newValue: settings,
+            metadata: { type: 'company_settings' },
+          },
+          ...s.auditLogs,
+        ],
+      }))
+      return null
+    }
+
+    const saveInventorySettings: StoreApi['saveInventorySettings'] = (settings) => {
+      const auth = canUser(currentUser, 'settings.manage')
+      if (!auth.allowed) return auth.reason!
+
+      const now = nowIso()
+      setState((s) => ({
+        ...s,
+        inventorySettings: { ...settings },
+        auditLogs: [
+          {
+            id: uid('aud'),
+            timestamp: now,
+            userId: currentUser?.id || 'admin',
+            userName: currentUser?.name || 'Administrator',
+            userEmail: currentUser?.email || 'admin@stocksense.io',
+            userRole: currentUser?.role || 'admin',
+            action: 'UPDATE',
+            entity: 'Settings',
+            entityId: 'inventory',
+            oldValue: s.inventorySettings,
+            newValue: settings,
+            metadata: { type: 'inventory_settings' },
+          },
+          ...s.auditLogs,
+        ],
+      }))
+      return null
+    }
+
+    const saveApprovalSettings: StoreApi['saveApprovalSettings'] = (settings) => {
+      const auth = canUser(currentUser, 'settings.manage')
+      if (!auth.allowed) return auth.reason!
+
+      const now = nowIso()
+      setState((s) => ({
+        ...s,
+        approvalSettings: { ...settings },
+        auditLogs: [
+          {
+            id: uid('aud'),
+            timestamp: now,
+            userId: currentUser?.id || 'admin',
+            userName: currentUser?.name || 'Administrator',
+            userEmail: currentUser?.email || 'admin@stocksense.io',
+            userRole: currentUser?.role || 'admin',
+            action: 'UPDATE',
+            entity: 'Settings',
+            entityId: 'approval',
+            oldValue: s.approvalSettings,
+            newValue: settings,
+            metadata: { type: 'approval_settings' },
+          },
+          ...s.auditLogs,
+        ],
+      }))
+      return null
+    }
+
+    const saveAlertRules: StoreApi['saveAlertRules'] = (rules) => {
+      const auth = canUser(currentUser, 'settings.manage')
+      if (!auth.allowed) return auth.reason!
+
+      const now = nowIso()
+      setState((s) => ({
+        ...s,
+        alertRules: { ...rules },
+        auditLogs: [
+          {
+            id: uid('aud'),
+            timestamp: now,
+            userId: currentUser?.id || 'admin',
+            userName: currentUser?.name || 'Administrator',
+            userEmail: currentUser?.email || 'admin@stocksense.io',
+            userRole: currentUser?.role || 'admin',
+            action: 'UPDATE',
+            entity: 'Settings',
+            entityId: 'alerts',
+            oldValue: s.alertRules,
+            newValue: rules,
+            metadata: { type: 'alert_rules' },
+          },
+          ...s.auditLogs,
+        ],
+      }))
+      return null
+    }
+
+    const saveSequences: StoreApi['saveSequences'] = (sequences) => {
+      const auth = canUser(currentUser, 'settings.manage')
+      if (!auth.allowed) return auth.reason!
+
+      const now = nowIso()
+      setState((s) => ({
+        ...s,
+        sequences: { ...sequences },
+        auditLogs: [
+          {
+            id: uid('aud'),
+            timestamp: now,
+            userId: currentUser?.id || 'admin',
+            userName: currentUser?.name || 'Administrator',
+            userEmail: currentUser?.email || 'admin@stocksense.io',
+            userRole: currentUser?.role || 'admin',
+            action: 'UPDATE',
+            entity: 'Settings',
+            entityId: 'sequences',
+            newValue: sequences,
+            metadata: { type: 'numbering_sequences' },
+          },
+          ...s.auditLogs,
+        ],
+      }))
+      return null
+    }
+
     return {
       state,
       currentUser,
@@ -2165,6 +2882,28 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       sealPackage,
       saveShipment,
       advanceShipmentStatus,
+
+      // Enterprise Administration Addon
+      can,
+      saveUser,
+      toggleUserStatus,
+      resetUserPassword,
+      deleteUser,
+      logAudit,
+      markNotificationRead,
+      markAllNotificationsRead,
+      clearNotifications,
+      triggerAlertEvaluation,
+      submitPurchaseOrderForApproval,
+      approvePurchaseOrder,
+      rejectPurchaseOrder,
+      approveDocument,
+      rejectDocument,
+      saveCompanySettings,
+      saveInventorySettings,
+      saveApprovalSettings,
+      saveAlertRules,
+      saveSequences,
     }
   }, [state, currentUser])
 
