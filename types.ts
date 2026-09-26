@@ -39,6 +39,9 @@ export interface Product {
   categoryId: string
   uom: string
   description: string
+  costPrice?: number
+  salesPrice?: number
+  primaryVendorId?: string
 }
 
 export interface ReorderRule {
@@ -89,17 +92,164 @@ export interface LedgerEntry {
   fromLocationId: string | null
   toLocationId: string | null
   qty: number
-  type: DocType | 'initial'
+  type: DocType | 'initial' | 'return'
   documentId: string | null
   documentNumber: string
   note: string
   userId: string
+  unitCost?: number
 }
 
 export interface PendingOtp {
   email: string
   code: string
   expiresAt: number
+}
+
+// ----------------- ADDON DOMAIN TYPES -----------------
+
+export interface Vendor {
+  id: string
+  code: string
+  companyName: string
+  contactPerson: string
+  email: string
+  phone: string
+  address: string
+  taxNumber: string
+  paymentTerms: string
+  leadTime: number // in days
+  status: 'active' | 'inactive'
+  notes: string
+  createdAt: string
+  updatedAt: string
+}
+
+export interface Customer {
+  id: string
+  code: string
+  name: string
+  email: string
+  phone: string
+  address: string
+  taxNumber: string
+  status: 'active' | 'inactive'
+  notes: string
+  createdAt: string
+  updatedAt: string
+}
+
+export type PurchaseOrderStatus = 'draft' | 'sent' | 'partial' | 'received' | 'canceled'
+
+export interface PurchaseOrderLine {
+  id: string
+  productId: string
+  orderedQty: number
+  receivedQty: number
+  unitCost: number
+  taxRate: number
+  subtotal: number
+  tax: number
+  total: number
+}
+
+export interface PurchaseOrder {
+  id: string
+  number: string
+  vendorId: string
+  warehouseId: string
+  orderDate: string
+  expectedDeliveryDate: string
+  status: PurchaseOrderStatus
+  currency: string
+  notes: string
+  lines: PurchaseOrderLine[]
+  subtotal: number
+  tax: number
+  total: number
+  allowOverReceipt?: boolean
+  createdAt: string
+  updatedAt: string
+  receivedDocIds?: string[]
+}
+
+export type SalesOrderStatus =
+  | 'draft'
+  | 'confirmed'
+  | 'reserved'
+  | 'picking'
+  | 'packed'
+  | 'shipped'
+  | 'delivered'
+  | 'canceled'
+
+export interface SalesOrderLine {
+  id: string
+  productId: string
+  qty: number
+  unitPrice: number
+  discount: number
+  taxRate: number
+  subtotal: number
+  tax: number
+  total: number
+}
+
+export interface SalesOrder {
+  id: string
+  number: string
+  customerId: string
+  warehouseId: string
+  orderDate: string
+  deliveryDate: string
+  status: SalesOrderStatus
+  currency: string
+  notes: string
+  lines: SalesOrderLine[]
+  subtotal: number
+  tax: number
+  total: number
+  createdAt: string
+  updatedAt: string
+  deliveryDocId?: string
+}
+
+export interface StockReservation {
+  id: string
+  salesOrderId: string
+  productId: string
+  warehouseId: string
+  qty: number
+  createdAt: string
+}
+
+export type ReturnType = 'customer' | 'vendor'
+export type ReturnDestination = 'restock' | 'damaged' | 'scrap' | 'inventory_loss'
+
+export interface ReturnLine {
+  id: string
+  productId: string
+  qty: number
+  reason: string
+  destination: ReturnDestination
+  inspectedQty?: number
+  disposition?: ReturnDestination | 'rejected'
+}
+
+export interface ReturnOrder {
+  id: string
+  number: string
+  type: ReturnType
+  status: string
+  partnerId: string
+  partnerName: string
+  referenceDocNumber?: string
+  warehouseId: string
+  lines: ReturnLine[]
+  notes: string
+  createdAt: string
+  updatedAt: string
+  completedAt?: string
 }
 
 export interface AppState {
@@ -114,5 +264,11 @@ export interface AppState {
   quants: Quant[]
   documents: Document[]
   ledger: LedgerEntry[]
-  sequences: Record<DocType, number>
+  sequences: Record<string, number>
+  vendors: Vendor[]
+  customers: Customer[]
+  purchaseOrders: PurchaseOrder[]
+  salesOrders: SalesOrder[]
+  reservations: StockReservation[]
+  returnOrders: ReturnOrder[]
 }

@@ -1,22 +1,35 @@
 import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from 'react'
 import { createSeed } from './lib/seed'
-import { qtyAt } from './lib/inventory'
+import { availableStock, qtyAt } from './lib/inventory'
 import { generateOtp, hashPassword, nowIso, uid } from './lib/utils'
 import type {
   AppState,
   Category,
+  Customer,
   Document,
   DocumentLine,
   DocType,
   Location,
   Product,
+  PurchaseOrder,
+  PurchaseOrderLine,
   ReorderRule,
+  ReturnDestination,
+  ReturnLine,
+  ReturnOrder,
+  ReturnType,
   Role,
+  SalesOrder,
+  SalesOrderLine,
+  SalesOrderStatus,
+  StockReservation,
   User,
+  Vendor,
   Warehouse,
 } from './types'
 
-const KEY = 'stocksense-v1'
+const KEY_V1 = 'stocksense-v1'
+const KEY = 'stocksense-v2'
 
 const PREFIX: Record<DocType, string> = {
   receipt: 'WH/IN',
@@ -27,10 +40,53 @@ const PREFIX: Record<DocType, string> = {
 
 function loadState(): AppState {
   try {
-    const raw = localStorage.getItem(KEY)
-    if (raw) return JSON.parse(raw) as AppState
-  } catch {
-    /* ignore */
+    let raw = localStorage.getItem(KEY)
+    if (!raw) {
+      const v1 = localStorage.getItem(KEY_V1)
+      if (v1) raw = v1
+    }
+
+    if (raw) {
+      const parsed = JSON.parse(raw) as Partial<AppState>
+      const seed = createSeed()
+      const merged: AppState = {
+        users: parsed.users || seed.users,
+        sessionUserId: parsed.sessionUserId ?? seed.sessionUserId,
+        pendingOtp: parsed.pendingOtp ?? null,
+        warehouses: parsed.warehouses || seed.warehouses,
+        locations: parsed.locations || seed.locations,
+        categories: parsed.categories || seed.categories,
+        products: (parsed.products || seed.products).map((p) => {
+          const seedProd = seed.products.find((sp) => sp.id === p.id)
+          return {
+            ...p,
+            costPrice: p.costPrice ?? seedProd?.costPrice ?? 30,
+            salesPrice: p.salesPrice ?? seedProd?.salesPrice ?? 55,
+            primaryVendorId: p.primaryVendorId ?? seedProd?.primaryVendorId ?? seed.vendors[0]?.id,
+          }
+        }),
+        reorderRules: parsed.reorderRules || seed.reorderRules,
+        quants: parsed.quants || seed.quants,
+        documents: parsed.documents || seed.documents,
+        ledger: parsed.ledger || seed.ledger,
+        sequences: {
+          ...seed.sequences,
+          ...(parsed.sequences || {}),
+        },
+        vendors: parsed.vendors && parsed.vendors.length ? parsed.vendors : seed.vendors,
+        customers: parsed.customers && parsed.customers.length ? parsed.customers : seed.customers,
+        purchaseOrders:
+          parsed.purchaseOrders && parsed.purchaseOrders.length ? parsed.purchaseOrders : seed.purchaseOrders,
+        salesOrders: parsed.salesOrders && parsed.salesOrders.length ? parsed.salesOrders : seed.salesOrders,
+        reservations: parsed.reservations || seed.reservations,
+        returnOrders:
+          parsed.returnOrders && parsed.returnOrders.length ? parsed.returnOrders : seed.returnOrders,
+      }
+      localStorage.setItem(KEY, JSON.stringify(merged))
+      return merged
+    }
+  } catch (err) {
+    console.error('Failed to load state from localStorage:', err)
   }
   const seed = createSeed()
   localStorage.setItem(KEY, JSON.stringify(seed))
@@ -41,11 +97,27 @@ function persist(state: AppState) {
   localStorage.setItem(KEY, JSON.stringify(state))
 }
 
-function nextNumber(state: AppState, type: DocType): { number: string; sequences: AppState['sequences'] } {
-  const n = state.sequences[type] + 1
+function nextNumber(
+  state: AppState,
+  type: DocType,
+): { number: string; sequences: AppState['sequences'] } {
+  const n = (state.sequences[type] || 0) + 1
   return {
     number: `${PREFIX[type]}/${String(n).padStart(5, '0')}`,
     sequences: { ...state.sequences, [type]: n },
+  }
+}
+
+function nextSeq(
+  state: AppState,
+  key: string,
+  prefix: string,
+  pad = 5,
+): { number: string; sequences: AppState['sequences'] } {
+  const n = (state.sequences[key] || 0) + 1
+  return {
+    number: `${prefix}/${String(n).padStart(pad, '0')}`,
+    sequences: { ...state.sequences, [key]: n },
   }
 }
 
@@ -68,7 +140,7 @@ function applyQty(
   return { ...state, quants }
 }
 
-type StoreApi = {
+export type StoreApi = {
   state: AppState
   currentUser: User | null
   login: (email: string, password: string) => Promise<string | null>
@@ -90,6 +162,43 @@ type StoreApi = {
   validateDocument: (id: string) => string | null
   cancelDocument: (id: string) => string | null
   defaultLocations: (type: DocType, warehouseId: string) => { source: string; dest: string }
+
+  // Vendor Management
+  saveVendor: (vendor: Omit<Vendor, 'id' | 'createdAt' | 'updatedAt'> & { id?: string }) => string
+  toggleVendorStatus: (id: string) => void
+  deleteVendor: (id: string) => void
+
+  // Customer Management
+  saveCustomer: (customer: Omit<Customer, 'id' | 'createdAt' | 'updatedAt'> & { id?: string }) => string
+  toggleCustomerStatus: (id: string) => void
+  deleteCustomer: (id: string) => void
+
+  // Purchase Orders
+  savePurchaseOrder: (po: Partial<PurchaseOrder> & { vendorId: string; warehouseId: string }) => string
+  sendPurchaseOrder: (id: string) => string | null
+  receivePurchaseOrder: (
+    id: string,
+    receivedLines: { productId: string; qty: number }[],
+    allowOverReceipt?: boolean,
+  ) => string | null
+  cancelPurchaseOrder: (id: string) => string | null
+  duplicatePurchaseOrder: (id: string) => string
+
+  // Sales Orders
+  saveSalesOrder: (so: Partial<SalesOrder> & { customerId: string; warehouseId: string }) => string
+  confirmSalesOrder: (id: string) => string | null
+  reserveSalesOrderStock: (id: string) => string | null
+  advanceSalesOrderStatus: (id: string, nextStatus: SalesOrderStatus) => string | null
+  cancelSalesOrder: (id: string) => string | null
+  duplicateSalesOrder: (id: string) => string
+
+  // Returns
+  saveReturnOrder: (order: Partial<ReturnOrder> & { type: ReturnType; warehouseId: string }) => string
+  advanceReturnStatus: (
+    id: string,
+    nextStatus: string,
+    dispositions?: Record<string, ReturnDestination>,
+  ) => string | null
 }
 
 const StoreContext = createContext<StoreApi | null>(null)
@@ -185,74 +294,95 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     }
 
     const updateProfile: StoreApi['updateProfile'] = (patch) => {
-      if (!state.sessionUserId) return
-      setState((s) => ({
-        ...s,
-        users: s.users.map((u) => (u.id === s.sessionUserId ? { ...u, ...patch } : u)),
-      }))
-    }
-
-    const saveCategory: StoreApi['saveCategory'] = (name) => {
-      const existing = state.categories.find((c) => c.name.toLowerCase() === name.trim().toLowerCase())
-      if (existing) return existing.id
-      const cat: Category = { id: uid('cat'), name: name.trim() }
-      setState((s) => ({ ...s, categories: [...s.categories, cat] }))
-      return cat.id
-    }
-
-    const saveProduct: StoreApi['saveProduct'] = (product) => {
-      const id = product.id ?? uid('prd')
       setState((s) => {
-        let next: AppState = { ...s }
-        const body: Product = {
-          id,
-          name: product.name.trim(),
-          sku: product.sku.trim().toUpperCase(),
-          categoryId: product.categoryId,
-          uom: product.uom,
-          description: product.description.trim(),
+        if (!s.sessionUserId) return s
+        return {
+          ...s,
+          users: s.users.map((u) => (u.id === s.sessionUserId ? { ...u, ...patch } : u)),
         }
-        const idx = next.products.findIndex((p) => p.id === id)
-        const products = [...next.products]
-        if (idx === -1) products.push(body)
-        else products[idx] = body
-        next = { ...next, products }
-        if (!product.id && product.initialStock && product.initialStock > 0 && product.locationId) {
-          next = applyQty(next, id, product.locationId, product.initialStock)
-          next = {
-            ...next,
+      })
+    }
+
+    const saveProduct: StoreApi['saveProduct'] = (input) => {
+      let createdId = input.id
+      setState((s) => {
+        const id = input.id || uid('prd')
+        createdId = id
+        const exists = s.products.some((p) => p.id === id)
+        const products = exists
+          ? s.products.map((p) =>
+              p.id === id
+                ? {
+                    ...p,
+                    name: input.name.trim(),
+                    sku: input.sku.trim(),
+                    categoryId: input.categoryId,
+                    uom: input.uom,
+                    description: input.description.trim(),
+                    costPrice: input.costPrice ?? p.costPrice ?? 30,
+                    salesPrice: input.salesPrice ?? p.salesPrice ?? 55,
+                    primaryVendorId: input.primaryVendorId ?? p.primaryVendorId,
+                  }
+                : p,
+            )
+          : [
+              ...s.products,
+              {
+                id,
+                name: input.name.trim(),
+                sku: input.sku.trim(),
+                categoryId: input.categoryId,
+                uom: input.uom,
+                description: input.description.trim(),
+                costPrice: input.costPrice ?? 30,
+                salesPrice: input.salesPrice ?? 55,
+                primaryVendorId: input.primaryVendorId,
+              },
+            ]
+
+        let nextState = { ...s, products }
+        if (!exists && input.initialStock && input.initialStock > 0 && input.locationId) {
+          nextState = applyQty(nextState, id, input.locationId, input.initialStock)
+          nextState = {
+            ...nextState,
             ledger: [
               {
                 id: uid('led'),
                 date: nowIso(),
                 productId: id,
                 fromLocationId: null,
-                toLocationId: product.locationId,
-                qty: product.initialStock,
+                toLocationId: input.locationId,
+                qty: input.initialStock,
                 type: 'initial',
                 documentId: null,
                 documentNumber: 'OPENING',
-                note: 'Initial stock',
-                userId: next.sessionUserId ?? 'system',
+                note: 'Opening stock count',
+                userId: s.sessionUserId ?? 'system',
+                unitCost: input.costPrice ?? 30,
               },
-              ...next.ledger,
+              ...nextState.ledger,
             ],
           }
         }
-        return next
+        return nextState
       })
+      return createdId!
+    }
+
+    const saveCategory: StoreApi['saveCategory'] = (name) => {
+      const id = uid('cat')
+      setState((s) => ({ ...s, categories: [...s.categories, { id, name: name.trim() }] }))
       return id
     }
 
-    const saveReorderRule: StoreApi['saveReorderRule'] = (rule) => {
+    const saveReorderRule: StoreApi['saveReorderRule'] = (input) => {
       setState((s) => {
-        const id = rule.id ?? uid('rr')
-        const body: ReorderRule = { ...rule, id }
-        const rules = [...s.reorderRules]
-        const idx = rules.findIndex((r) => r.id === id)
-        if (idx === -1) rules.push(body)
-        else rules[idx] = body
-        return { ...s, reorderRules: rules }
+        const id = input.id || uid('rr')
+        const exists = s.reorderRules.some((r) => r.id === id)
+        const reorderRules = exists
+          ? s.reorderRules.map((r) => (r.id === id ? { ...r, ...input, id } : r))
+          : [...s.reorderRules, { ...input, id }]
+        return { ...s, reorderRules }
       })
     }
 
@@ -260,97 +390,99 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       setState((s) => ({ ...s, reorderRules: s.reorderRules.filter((r) => r.id !== id) }))
     }
 
-    const saveWarehouse: StoreApi['saveWarehouse'] = (wh) => {
-      const id = wh.id ?? uid('wh')
+    const saveWarehouse: StoreApi['saveWarehouse'] = (input) => {
+      let createdId = input.id
       setState((s) => {
-        const body: Warehouse = { id, name: wh.name.trim(), code: wh.code.trim().toUpperCase(), address: wh.address.trim() }
-        const warehouses = [...s.warehouses]
-        const idx = warehouses.findIndex((w) => w.id === id)
+        const id = input.id || uid('wh')
+        createdId = id
+        const exists = s.warehouses.some((w) => w.id === id)
+        const warehouses = exists
+          ? s.warehouses.map((w) => (w.id === id ? { ...w, ...input, id } : w))
+          : [...s.warehouses, { ...input, id }]
+
         let locations = s.locations
-        if (idx === -1) {
-          warehouses.push(body)
+        if (!exists) {
           locations = [
             ...locations,
-            {
-              id: uid('loc'),
-              warehouseId: id,
-              name: 'Stock',
-              code: `${body.code}/Stock`,
-              type: 'internal',
-            },
+            { id: uid('loc'), warehouseId: id, name: `${input.name} Stock`, code: `${input.code}/Stock`, type: 'internal' },
+            { id: uid('loc'), warehouseId: id, name: `${input.name} Input`, code: `${input.code}/Input`, type: 'internal' },
+            { id: uid('loc'), warehouseId: id, name: `${input.name} Output`, code: `${input.code}/Output`, type: 'internal' },
           ]
-        } else warehouses[idx] = body
+        }
         return { ...s, warehouses, locations }
       })
-      return id
+      return createdId!
     }
 
-    const saveLocation: StoreApi['saveLocation'] = (loc) => {
+    const saveLocation: StoreApi['saveLocation'] = (input) => {
       setState((s) => {
-        const id = loc.id ?? uid('loc')
-        const body: Location = { ...loc, id, name: loc.name.trim(), code: loc.code.trim() }
-        const locations = [...s.locations]
-        const idx = locations.findIndex((l) => l.id === id)
-        if (idx === -1) locations.push(body)
-        else locations[idx] = body
+        const id = input.id || uid('loc')
+        const exists = s.locations.some((l) => l.id === id)
+        const locations = exists
+          ? s.locations.map((l) => (l.id === id ? { ...l, ...input, id } : l))
+          : [...s.locations, { ...input, id }]
         return { ...s, locations }
       })
     }
 
     const defaultLocations: StoreApi['defaultLocations'] = (type, warehouseId) => {
-      const internals = state.locations.filter((l) => l.warehouseId === warehouseId && l.type === 'internal')
-      const stock = internals.find((l) => l.code.endsWith('/Stock')) ?? internals[0]
-      const vendor = state.locations.find((l) => l.type === 'vendor')
-      const customer = state.locations.find((l) => l.type === 'customer')
-      const loss = state.locations.find((l) => l.type === 'inventory_loss')
-      if (type === 'receipt') return { source: vendor?.id ?? '', dest: stock?.id ?? '' }
-      if (type === 'delivery') return { source: stock?.id ?? '', dest: customer?.id ?? '' }
-      if (type === 'adjustment') return { source: stock?.id ?? '', dest: loss?.id ?? '' }
-      return { source: stock?.id ?? '', dest: internals[1]?.id ?? stock?.id ?? '' }
+      const whLocs = state.locations.filter((l) => l.warehouseId === warehouseId && l.type === 'internal')
+      const stock = whLocs.find((l) => l.code.endsWith('/Stock')) || whLocs[0]
+      const input = whLocs.find((l) => l.code.endsWith('/Input')) || stock
+      const output = whLocs.find((l) => l.code.endsWith('/Output')) || stock
+      const vendor = state.locations.find((l) => l.type === 'vendor') || { id: 'loc_vendor' }
+      const customer = state.locations.find((l) => l.type === 'customer') || { id: 'loc_customer' }
+      const loss = state.locations.find((l) => l.type === 'inventory_loss') || { id: 'loc_loss' }
+
+      switch (type) {
+        case 'receipt':
+          return { source: vendor.id, dest: input?.id || stock?.id || '' }
+        case 'delivery':
+          return { source: output?.id || stock?.id || '', dest: customer.id }
+        case 'internal':
+          return { source: stock?.id || '', dest: whLocs[1]?.id || stock?.id || '' }
+        case 'adjustment':
+          return { source: stock?.id || '', dest: loss.id }
+      }
     }
 
-    const saveDocument: StoreApi['saveDocument'] = (doc) => {
-      const id = doc.id ?? uid('doc')
+    const saveDocument: StoreApi['saveDocument'] = (input) => {
+      let createdId = input.id
       setState((s) => {
-        const existing = s.documents.find((d) => d.id === id)
-        if (existing && existing.status !== 'draft') return s
-        let sequences = s.sequences
-        let number = existing?.number
-        if (!number) {
-          const nxt = nextNumber(s, doc.type)
-          number = nxt.number
-          sequences = nxt.sequences
-        }
-        const warehouseId = doc.warehouseId ?? s.warehouses[0]?.id ?? ''
-        const defaults = defaultLocations(doc.type, warehouseId)
+        const isNew = !input.id
+        const id = input.id || uid('doc')
+        createdId = id
+        const { number, sequences } = isNew ? nextNumber(s, input.type) : { number: input.number!, sequences: s.sequences }
+        const defaults = defaultLocations(input.type, input.warehouseId || s.warehouses[0]?.id || '')
+
         const body: Document = {
           id,
-          number,
-          type: doc.type,
-          status: 'draft',
-          warehouseId,
-          sourceLocationId: doc.sourceLocationId ?? defaults.source,
-          destLocationId: doc.destLocationId ?? defaults.dest,
-          partnerName: doc.partnerName ?? '',
-          scheduledDate: doc.scheduledDate ?? nowIso().slice(0, 10),
-          notes: doc.notes ?? '',
-          lines: (doc.lines ?? []).map((l) => ({
+          number: input.number || number,
+          type: input.type,
+          status: input.status || 'draft',
+          warehouseId: input.warehouseId || s.warehouses[0]?.id || '',
+          sourceLocationId: input.sourceLocationId || defaults.source,
+          destLocationId: input.destLocationId || defaults.dest,
+          partnerName: input.partnerName?.trim() || '',
+          scheduledDate: input.scheduledDate || nowIso().slice(0, 10),
+          notes: input.notes?.trim() || '',
+          lines: (input.lines && input.lines.length ? input.lines : [{ id: uid('ln'), productId: '', qty: 1 }]).map((l) => ({
+            ...l,
             id: l.id || uid('ln'),
-            productId: l.productId,
-            qty: Number(l.qty) || 0,
-            countedQty: l.countedQty,
           })),
-          createdAt: existing?.createdAt ?? nowIso(),
-          pickDone: false,
-          packDone: false,
-          createdBy: s.sessionUserId ?? 'system',
+          createdAt: input.createdAt || nowIso(),
+          validatedAt: input.validatedAt,
+          pickDone: input.pickDone ?? false,
+          packDone: input.packDone ?? false,
+          createdBy: input.createdBy || s.sessionUserId || 'system',
         }
-        const documents = existing
+
+        const documents = s.documents.some((d) => d.id === id)
           ? s.documents.map((d) => (d.id === id ? body : d))
           : [body, ...s.documents]
         return { ...s, documents, sequences }
       })
-      return id
+      return createdId!
     }
 
     const patchDoc = (id: string, fn: (s: AppState, doc: Document) => AppState | string) => {
@@ -433,6 +565,9 @@ export function StoreProvider({ children }: { children: ReactNode }) {
 
         for (const line of doc.lines) {
           if (!line.productId || line.qty <= 0) continue
+          const prod = s.products.find((p) => p.id === line.productId)
+          const unitCost = prod?.costPrice ?? 30
+
           if (doc.type === 'receipt') {
             next = applyQty(next, line.productId, doc.destLocationId, line.qty)
             ledgerAdds.push({
@@ -447,6 +582,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
               documentNumber: doc.number,
               note: doc.notes || 'Incoming stock',
               userId,
+              unitCost,
             })
           } else if (doc.type === 'delivery' || doc.type === 'internal') {
             const available = qtyAt(next, line.productId, doc.sourceLocationId)
@@ -465,6 +601,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
               documentNumber: doc.number,
               note: doc.notes || (doc.type === 'delivery' ? 'Outgoing stock' : 'Internal transfer'),
               userId,
+              unitCost,
             })
           } else {
             const current = qtyAt(next, line.productId, doc.sourceLocationId)
@@ -479,24 +616,25 @@ export function StoreProvider({ children }: { children: ReactNode }) {
               id: uid('led'),
               date: nowIso(),
               productId: line.productId,
-              fromLocationId: diff < 0 ? doc.sourceLocationId : doc.destLocationId,
-              toLocationId: diff < 0 ? doc.destLocationId : doc.sourceLocationId,
+              fromLocationId: diff > 0 ? doc.destLocationId : doc.sourceLocationId,
+              toLocationId: diff > 0 ? doc.sourceLocationId : doc.destLocationId,
               qty: Math.abs(diff),
               type: doc.type,
               documentId: doc.id,
               documentNumber: doc.number,
-              note: doc.notes || `Physical count ${counted} (was ${current})`,
+              note: doc.notes || 'Inventory adjustment count diff',
               userId,
+              unitCost,
             })
           }
         }
 
         return {
           ...next,
-          ledger: [...ledgerAdds, ...next.ledger],
           documents: next.documents.map((d) =>
-            d.id === id ? { ...d, status: 'done' as const, validatedAt: nowIso() } : d,
+            d.id === id ? { ...d, status: 'done', validatedAt: nowIso() } : d,
           ),
+          ledger: [...ledgerAdds, ...next.ledger],
         }
       })
 
@@ -508,6 +646,797 @@ export function StoreProvider({ children }: { children: ReactNode }) {
           documents: s.documents.map((d) => (d.id === id ? { ...d, status: 'canceled' } : d)),
         }
       })
+
+    // ----------------- VENDORS MODULE -----------------
+
+    const saveVendor: StoreApi['saveVendor'] = (input) => {
+      let createdId = input.id
+      setState((s) => {
+        const id = input.id || uid('vnd')
+        createdId = id
+        const exists = s.vendors.some((v) => v.id === id)
+        const vendorList = exists
+          ? s.vendors.map((v) =>
+              v.id === id
+                ? {
+                    ...v,
+                    ...input,
+                    id,
+                    updatedAt: nowIso(),
+                  }
+                : v,
+            )
+          : [
+              ...s.vendors,
+              {
+                ...input,
+                id,
+                code: input.code || `VND-${String(s.vendors.length + 1).padStart(3, '0')}`,
+                status: input.status || 'active',
+                createdAt: nowIso(),
+                updatedAt: nowIso(),
+              },
+            ]
+        return { ...s, vendors: vendorList }
+      })
+      return createdId!
+    }
+
+    const toggleVendorStatus: StoreApi['toggleVendorStatus'] = (id) => {
+      setState((s) => ({
+        ...s,
+        vendors: s.vendors.map((v) =>
+          v.id === id ? { ...v, status: v.status === 'active' ? 'inactive' : 'active', updatedAt: nowIso() } : v,
+        ),
+      }))
+    }
+
+    const deleteVendor: StoreApi['deleteVendor'] = (id) => {
+      setState((s) => ({ ...s, vendors: s.vendors.filter((v) => v.id !== id) }))
+    }
+
+    // ----------------- CUSTOMERS MODULE -----------------
+
+    const saveCustomer: StoreApi['saveCustomer'] = (input) => {
+      let createdId = input.id
+      setState((s) => {
+        const id = input.id || uid('cust')
+        createdId = id
+        const exists = s.customers.some((c) => c.id === id)
+        const customerList = exists
+          ? s.customers.map((c) =>
+              c.id === id
+                ? {
+                    ...c,
+                    ...input,
+                    id,
+                    updatedAt: nowIso(),
+                  }
+                : c,
+            )
+          : [
+              ...s.customers,
+              {
+                ...input,
+                id,
+                code: input.code || `CUST-${String(s.customers.length + 1).padStart(3, '0')}`,
+                status: input.status || 'active',
+                createdAt: nowIso(),
+                updatedAt: nowIso(),
+              },
+            ]
+        return { ...s, customers: customerList }
+      })
+      return createdId!
+    }
+
+    const toggleCustomerStatus: StoreApi['toggleCustomerStatus'] = (id) => {
+      setState((s) => ({
+        ...s,
+        customers: s.customers.map((c) =>
+          c.id === id ? { ...c, status: c.status === 'active' ? 'inactive' : 'active', updatedAt: nowIso() } : c,
+        ),
+      }))
+    }
+
+    const deleteCustomer: StoreApi['deleteCustomer'] = (id) => {
+      setState((s) => ({ ...s, customers: s.customers.filter((c) => c.id !== id) }))
+    }
+
+    // ----------------- PURCHASE ORDERS MODULE -----------------
+
+    const savePurchaseOrder: StoreApi['savePurchaseOrder'] = (input) => {
+      let createdId = input.id
+      setState((s) => {
+        const isNew = !input.id
+        const id = input.id || uid('po')
+        createdId = id
+        const { number, sequences } = isNew ? nextSeq(s, 'po', 'PO') : { number: input.number!, sequences: s.sequences }
+
+        const lines: PurchaseOrderLine[] = (input.lines && input.lines.length
+          ? input.lines
+          : [{ id: uid('pol'), productId: '', orderedQty: 10, receivedQty: 0, unitCost: 30, taxRate: 10, subtotal: 300, tax: 30, total: 330 }]
+        ).map((l) => {
+          const subtotal = l.orderedQty * l.unitCost
+          const tax = subtotal * (l.taxRate / 100)
+          return {
+            id: l.id || uid('pol'),
+            productId: l.productId,
+            orderedQty: Number(l.orderedQty),
+            receivedQty: Number(l.receivedQty || 0),
+            unitCost: Number(l.unitCost),
+            taxRate: Number(l.taxRate || 0),
+            subtotal: Math.round(subtotal * 100) / 100,
+            tax: Math.round(tax * 100) / 100,
+            total: Math.round((subtotal + tax) * 100) / 100,
+          }
+        })
+
+        const subtotal = lines.reduce((sum, l) => sum + l.subtotal, 0)
+        const tax = lines.reduce((sum, l) => sum + l.tax, 0)
+        const total = subtotal + tax
+
+        const body: PurchaseOrder = {
+          id,
+          number: input.number || number,
+          vendorId: input.vendorId,
+          warehouseId: input.warehouseId,
+          orderDate: input.orderDate || nowIso().slice(0, 10),
+          expectedDeliveryDate: input.expectedDeliveryDate || nowIso().slice(0, 10),
+          status: input.status || 'draft',
+          currency: input.currency || 'USD',
+          notes: input.notes?.trim() || '',
+          lines,
+          subtotal: Math.round(subtotal * 100) / 100,
+          tax: Math.round(tax * 100) / 100,
+          total: Math.round(total * 100) / 100,
+          allowOverReceipt: input.allowOverReceipt ?? false,
+          createdAt: input.createdAt || nowIso(),
+          updatedAt: nowIso(),
+          receivedDocIds: input.receivedDocIds || [],
+        }
+
+        const purchaseOrders = s.purchaseOrders.some((p) => p.id === id)
+          ? s.purchaseOrders.map((p) => (p.id === id ? body : p))
+          : [body, ...s.purchaseOrders]
+
+        return { ...s, purchaseOrders, sequences }
+      })
+      return createdId!
+    }
+
+    const sendPurchaseOrder: StoreApi['sendPurchaseOrder'] = (id) => {
+      let error: string | null = null
+      setState((s) => {
+        const po = s.purchaseOrders.find((p) => p.id === id)
+        if (!po) {
+          error = 'Purchase order not found.'
+          return s
+        }
+        if (po.status !== 'draft') {
+          error = 'Only draft purchase orders can be sent.'
+          return s
+        }
+        return {
+          ...s,
+          purchaseOrders: s.purchaseOrders.map((p) => (p.id === id ? { ...p, status: 'sent', updatedAt: nowIso() } : p)),
+        }
+      })
+      return error
+    }
+
+    const receivePurchaseOrder: StoreApi['receivePurchaseOrder'] = (
+      id,
+      receivedLines,
+      allowOverReceipt = false,
+    ) => {
+      let error: string | null = null
+      setState((s) => {
+        const po = s.purchaseOrders.find((p) => p.id === id)
+        if (!po) {
+          error = 'Purchase order not found.'
+          return s
+        }
+        if (po.status === 'received' || po.status === 'canceled') {
+          error = 'This purchase order cannot receive additional goods.'
+          return s
+        }
+
+        const whLocs = s.locations.filter((l) => l.warehouseId === po.warehouseId && l.type === 'internal')
+        const inputLoc = whLocs.find((l) => l.code.endsWith('/Input')) || whLocs.find((l) => l.code.endsWith('/Stock')) || whLocs[0]
+        const vendorLoc = s.locations.find((l) => l.type === 'vendor') || { id: 'loc_vendor' }
+
+        if (!inputLoc) {
+          error = 'No destination storage location found for this warehouse.'
+          return s
+        }
+
+        // Validate over-receipt
+        for (const item of receivedLines) {
+          const poLine = po.lines.find((l) => l.productId === item.productId)
+          if (!poLine) continue
+          const remaining = poLine.orderedQty - poLine.receivedQty
+          if (item.qty > remaining && !po.allowOverReceipt && !allowOverReceipt) {
+            error = `Cannot receive ${item.qty} units. Remaining quantity is ${remaining}. Enable over-receipt to proceed.`
+            return s
+          }
+        }
+
+        const itemsWithQty = receivedLines.filter((l) => l.qty > 0)
+        if (!itemsWithQty.length) {
+          error = 'Enter at least one item quantity to receive.'
+          return s
+        }
+
+        // 1. Create Receipt Document
+        const seqReceipt = (s.sequences['receipt'] || 0) + 1
+        const receiptNumber = `${PREFIX['receipt']}/${String(seqReceipt).padStart(5, '0')}`
+        const receiptDocId = uid('doc')
+        const vendor = s.vendors.find((v) => v.id === po.vendorId)
+
+        const receiptDoc: Document = {
+          id: receiptDocId,
+          number: receiptNumber,
+          type: 'receipt',
+          status: 'done',
+          warehouseId: po.warehouseId,
+          sourceLocationId: vendorLoc.id,
+          destLocationId: inputLoc.id,
+          partnerName: vendor ? vendor.companyName : 'Vendor',
+          scheduledDate: nowIso().slice(0, 10),
+          notes: `Received against Purchase Order ${po.number}`,
+          lines: itemsWithQty.map((item) => ({ id: uid('ln'), productId: item.productId, qty: item.qty })),
+          createdAt: nowIso(),
+          validatedAt: nowIso(),
+          pickDone: false,
+          packDone: false,
+          createdBy: s.sessionUserId || 'system',
+        }
+
+        // 2. Update stock quants and product Weighted Average Cost (WAC)
+        let nextState = s
+        const ledgerAdds = []
+        const updatedProducts = [...s.products]
+
+        for (const item of itemsWithQty) {
+          nextState = applyQty(nextState, item.productId, inputLoc.id, item.qty)
+
+          const poLine = po.lines.find((l) => l.productId === item.productId)
+          const unitCost = poLine ? poLine.unitCost : 30
+
+          // Calculate Weighted Average Cost:
+          const pIdx = updatedProducts.findIndex((p) => p.id === item.productId)
+          if (pIdx !== -1) {
+            const currentP = updatedProducts[pIdx]
+            const currentOnHand = nextState.quants
+              .filter((q) => q.productId === item.productId)
+              .reduce((sum, q) => sum + q.qty, 0)
+            const oldCost = currentP.costPrice ?? 30
+            // WAC = ((existingQty * oldCost) + (newQty * newCost)) / totalQty
+            const priorQty = Math.max(0, currentOnHand - item.qty)
+            const newWAC =
+              priorQty + item.qty > 0
+                ? Math.round(((priorQty * oldCost + item.qty * unitCost) / (priorQty + item.qty)) * 100) / 100
+                : unitCost
+
+            updatedProducts[pIdx] = { ...currentP, costPrice: newWAC }
+          }
+
+          ledgerAdds.push({
+            id: uid('led'),
+            date: nowIso(),
+            productId: item.productId,
+            fromLocationId: vendorLoc.id,
+            toLocationId: inputLoc.id,
+            qty: item.qty,
+            type: 'receipt' as DocType,
+            documentId: receiptDocId,
+            documentNumber: receiptNumber,
+            note: `Goods receipt for ${po.number}`,
+            userId: s.sessionUserId || 'system',
+            unitCost,
+          })
+        }
+
+        // 3. Update PO lines receivedQty and determine new PO status
+        const nextLines = po.lines.map((line) => {
+          const matched = itemsWithQty.find((m) => m.productId === line.productId)
+          if (!matched) return line
+          return {
+            ...line,
+            receivedQty: line.receivedQty + matched.qty,
+          }
+        })
+
+        const allReceived = nextLines.every((l) => l.receivedQty >= l.orderedQty)
+        const nextStatus = allReceived ? 'received' : 'partial'
+
+        const updatedPo: PurchaseOrder = {
+          ...po,
+          lines: nextLines,
+          status: nextStatus,
+          updatedAt: nowIso(),
+          receivedDocIds: [...(po.receivedDocIds || []), receiptDocId],
+        }
+
+        return {
+          ...nextState,
+          products: updatedProducts,
+          purchaseOrders: s.purchaseOrders.map((p) => (p.id === id ? updatedPo : p)),
+          documents: [receiptDoc, ...s.documents],
+          ledger: [...ledgerAdds, ...s.ledger],
+          sequences: { ...s.sequences, receipt: seqReceipt },
+        }
+      })
+      return error
+    }
+
+    const cancelPurchaseOrder: StoreApi['cancelPurchaseOrder'] = (id) => {
+      let error: string | null = null
+      setState((s) => {
+        const po = s.purchaseOrders.find((p) => p.id === id)
+        if (!po) {
+          error = 'Purchase order not found.'
+          return s
+        }
+        if (po.status === 'received' || po.status === 'partial') {
+          error = 'Cannot cancel a purchase order that has already received items.'
+          return s
+        }
+        return {
+          ...s,
+          purchaseOrders: s.purchaseOrders.map((p) => (p.id === id ? { ...p, status: 'canceled', updatedAt: nowIso() } : p)),
+        }
+      })
+      return error
+    }
+
+    const duplicatePurchaseOrder: StoreApi['duplicatePurchaseOrder'] = (id) => {
+      let createdId = ''
+      setState((s) => {
+        const po = s.purchaseOrders.find((p) => p.id === id)
+        if (!po) return s
+        const newId = uid('po')
+        createdId = newId
+        const { number, sequences } = nextSeq(s, 'po', 'PO')
+        const duplicated: PurchaseOrder = {
+          ...po,
+          id: newId,
+          number,
+          status: 'draft',
+          orderDate: nowIso().slice(0, 10),
+          expectedDeliveryDate: nowIso().slice(0, 10),
+          lines: po.lines.map((l) => ({ ...l, id: uid('pol'), receivedQty: 0 })),
+          createdAt: nowIso(),
+          updatedAt: nowIso(),
+          receivedDocIds: [],
+        }
+        return {
+          ...s,
+          purchaseOrders: [duplicated, ...s.purchaseOrders],
+          sequences,
+        }
+      })
+      return createdId
+    }
+
+    // ----------------- SALES ORDERS MODULE -----------------
+
+    const saveSalesOrder: StoreApi['saveSalesOrder'] = (input) => {
+      let createdId = input.id
+      setState((s) => {
+        const isNew = !input.id
+        const id = input.id || uid('so')
+        createdId = id
+        const { number, sequences } = isNew ? nextSeq(s, 'so', 'SO') : { number: input.number!, sequences: s.sequences }
+
+        const lines: SalesOrderLine[] = (input.lines && input.lines.length
+          ? input.lines
+          : [{ id: uid('sol'), productId: '', qty: 1, unitPrice: 50, discount: 0, taxRate: 8, subtotal: 50, tax: 4, total: 54 }]
+        ).map((l) => {
+          const discountAmt = (l.qty * l.unitPrice * (l.discount || 0)) / 100
+          const subtotal = l.qty * l.unitPrice - discountAmt
+          const tax = subtotal * (l.taxRate / 100)
+          return {
+            id: l.id || uid('sol'),
+            productId: l.productId,
+            qty: Number(l.qty),
+            unitPrice: Number(l.unitPrice),
+            discount: Number(l.discount || 0),
+            taxRate: Number(l.taxRate || 0),
+            subtotal: Math.round(subtotal * 100) / 100,
+            tax: Math.round(tax * 100) / 100,
+            total: Math.round((subtotal + tax) * 100) / 100,
+          }
+        })
+
+        const subtotal = lines.reduce((sum, l) => sum + l.subtotal, 0)
+        const tax = lines.reduce((sum, l) => sum + l.tax, 0)
+        const total = subtotal + tax
+
+        const body: SalesOrder = {
+          id,
+          number: input.number || number,
+          customerId: input.customerId,
+          warehouseId: input.warehouseId,
+          orderDate: input.orderDate || nowIso().slice(0, 10),
+          deliveryDate: input.deliveryDate || nowIso().slice(0, 10),
+          status: input.status || 'draft',
+          currency: input.currency || 'USD',
+          notes: input.notes?.trim() || '',
+          lines,
+          subtotal: Math.round(subtotal * 100) / 100,
+          tax: Math.round(tax * 100) / 100,
+          total: Math.round(total * 100) / 100,
+          createdAt: input.createdAt || nowIso(),
+          updatedAt: nowIso(),
+          deliveryDocId: input.deliveryDocId,
+        }
+
+        const salesOrders = s.salesOrders.some((so) => so.id === id)
+          ? s.salesOrders.map((so) => (so.id === id ? body : so))
+          : [body, ...s.salesOrders]
+
+        return { ...s, salesOrders, sequences }
+      })
+      return createdId!
+    }
+
+    const confirmSalesOrder: StoreApi['confirmSalesOrder'] = (id) => {
+      let error: string | null = null
+      setState((s) => {
+        const so = s.salesOrders.find((o) => o.id === id)
+        if (!so) {
+          error = 'Sales order not found.'
+          return s
+        }
+        if (so.status !== 'draft') {
+          error = 'Only draft orders can be confirmed.'
+          return s
+        }
+        return {
+          ...s,
+          salesOrders: s.salesOrders.map((o) => (o.id === id ? { ...o, status: 'confirmed', updatedAt: nowIso() } : o)),
+        }
+      })
+      return error
+    }
+
+    const reserveSalesOrderStock: StoreApi['reserveSalesOrderStock'] = (id) => {
+      let error: string | null = null
+      setState((s) => {
+        const so = s.salesOrders.find((o) => o.id === id)
+        if (!so) {
+          error = 'Sales order not found.'
+          return s
+        }
+        if (so.status !== 'confirmed') {
+          error = 'Order must be confirmed before reserving stock.'
+          return s
+        }
+
+        // Check stock availability
+        for (const line of so.lines) {
+          const avail = availableStock(s, line.productId, so.warehouseId)
+          if (avail < line.qty) {
+            const prod = s.products.find((p) => p.id === line.productId)
+            error = `Insufficient available stock for ${prod?.name || 'Product'} (SKU: ${prod?.sku}). Available: ${avail}, Required: ${line.qty}.`
+            return s
+          }
+        }
+
+        // Create reservations
+        const newReservations: StockReservation[] = so.lines.map((line) => ({
+          id: uid('res'),
+          salesOrderId: so.id,
+          productId: line.productId,
+          warehouseId: so.warehouseId,
+          qty: line.qty,
+          createdAt: nowIso(),
+        }))
+
+        return {
+          ...s,
+          reservations: [...s.reservations, ...newReservations],
+          salesOrders: s.salesOrders.map((o) => (o.id === id ? { ...o, status: 'reserved', updatedAt: nowIso() } : o)),
+        }
+      })
+      return error
+    }
+
+    const advanceSalesOrderStatus: StoreApi['advanceSalesOrderStatus'] = (id, nextStatus) => {
+      let error: string | null = null
+      setState((s) => {
+        const so = s.salesOrders.find((o) => o.id === id)
+        if (!so) {
+          error = 'Sales order not found.'
+          return s
+        }
+
+        // When transitioning to shipped, deduct physical stock and log ledger
+        if (nextStatus === 'shipped') {
+          const whLocs = s.locations.filter((l) => l.warehouseId === so.warehouseId && l.type === 'internal')
+          const outputLoc = whLocs.find((l) => l.code.endsWith('/Output')) || whLocs.find((l) => l.code.endsWith('/Stock')) || whLocs[0]
+          const customerLoc = s.locations.find((l) => l.type === 'customer') || { id: 'loc_customer' }
+
+          if (!outputLoc) {
+            error = 'Warehouse output location not found.'
+            return s
+          }
+
+          let next = s
+          const ledgerAdds = []
+
+          // Deduct stock for each line
+          for (const line of so.lines) {
+            next = applyQty(next, line.productId, outputLoc.id, -line.qty)
+            next = applyQty(next, line.productId, customerLoc.id, line.qty)
+
+            const prod = s.products.find((p) => p.id === line.productId)
+            ledgerAdds.push({
+              id: uid('led'),
+              date: nowIso(),
+              productId: line.productId,
+              fromLocationId: outputLoc.id,
+              toLocationId: customerLoc.id,
+              qty: line.qty,
+              type: 'delivery' as DocType,
+              documentId: null,
+              documentNumber: so.number,
+              note: `Shipped for Sales Order ${so.number}`,
+              userId: s.sessionUserId || 'system',
+              unitCost: prod?.costPrice ?? 30,
+            })
+          }
+
+          // Release reservations
+          const remainingReservations = next.reservations.filter((r) => r.salesOrderId !== id)
+
+          // Create linked Delivery Document
+          const seqDel = (s.sequences['delivery'] || 0) + 1
+          const delNumber = `${PREFIX['delivery']}/${String(seqDel).padStart(5, '0')}`
+          const customer = s.customers.find((c) => c.id === so.customerId)
+
+          const delDoc: Document = {
+            id: uid('doc'),
+            number: delNumber,
+            type: 'delivery',
+            status: 'done',
+            warehouseId: so.warehouseId,
+            sourceLocationId: outputLoc.id,
+            destLocationId: customerLoc.id,
+            partnerName: customer ? customer.name : 'Customer',
+            scheduledDate: so.deliveryDate,
+            notes: `Delivery for Sales Order ${so.number}`,
+            lines: so.lines.map((l) => ({ id: uid('ln'), productId: l.productId, qty: l.qty })),
+            createdAt: nowIso(),
+            validatedAt: nowIso(),
+            pickDone: true,
+            packDone: true,
+            createdBy: s.sessionUserId || 'system',
+          }
+
+          return {
+            ...next,
+            reservations: remainingReservations,
+            documents: [delDoc, ...next.documents],
+            ledger: [...ledgerAdds, ...next.ledger],
+            sequences: { ...next.sequences, delivery: seqDel },
+            salesOrders: s.salesOrders.map((o) =>
+              o.id === id ? { ...o, status: 'shipped', deliveryDocId: delDoc.id, updatedAt: nowIso() } : o,
+            ),
+          }
+        }
+
+        return {
+          ...s,
+          salesOrders: s.salesOrders.map((o) => (o.id === id ? { ...o, status: nextStatus, updatedAt: nowIso() } : o)),
+        }
+      })
+      return error
+    }
+
+    const cancelSalesOrder: StoreApi['cancelSalesOrder'] = (id) => {
+      let error: string | null = null
+      setState((s) => {
+        const so = s.salesOrders.find((o) => o.id === id)
+        if (!so) {
+          error = 'Sales order not found.'
+          return s
+        }
+        if (so.status === 'shipped' || so.status === 'delivered') {
+          error = 'Cannot cancel an order that has already been shipped.'
+          return s
+        }
+        // Release reservations
+        const remainingReservations = s.reservations.filter((r) => r.salesOrderId !== id)
+        return {
+          ...s,
+          reservations: remainingReservations,
+          salesOrders: s.salesOrders.map((o) => (o.id === id ? { ...o, status: 'canceled', updatedAt: nowIso() } : o)),
+        }
+      })
+      return error
+    }
+
+    const duplicateSalesOrder: StoreApi['duplicateSalesOrder'] = (id) => {
+      let createdId = ''
+      setState((s) => {
+        const so = s.salesOrders.find((o) => o.id === id)
+        if (!so) return s
+        const newId = uid('so')
+        createdId = newId
+        const { number, sequences } = nextSeq(s, 'so', 'SO')
+        const duplicated: SalesOrder = {
+          ...so,
+          id: newId,
+          number,
+          status: 'draft',
+          orderDate: nowIso().slice(0, 10),
+          deliveryDate: nowIso().slice(0, 10),
+          lines: so.lines.map((l) => ({ ...l, id: uid('sol') })),
+          createdAt: nowIso(),
+          updatedAt: nowIso(),
+          deliveryDocId: undefined,
+        }
+        return {
+          ...s,
+          salesOrders: [duplicated, ...s.salesOrders],
+          sequences,
+        }
+      })
+      return createdId
+    }
+
+    // ----------------- RETURNS MODULE -----------------
+
+    const saveReturnOrder: StoreApi['saveReturnOrder'] = (input) => {
+      let createdId = input.id
+      setState((s) => {
+        const isNew = !input.id
+        const id = input.id || uid('ret')
+        createdId = id
+        const seqKey = input.type === 'customer' ? 'ret_cust' : 'ret_vend'
+        const prefix = input.type === 'customer' ? 'RET-C' : 'RET-V'
+        const { number, sequences } = isNew ? nextSeq(s, seqKey, prefix) : { number: input.number!, sequences: s.sequences }
+
+        const body: ReturnOrder = {
+          id,
+          number: input.number || number,
+          type: input.type,
+          status: input.status || (input.type === 'customer' ? 'delivered' : 'received'),
+          partnerId: input.partnerId || '',
+          partnerName: input.partnerName?.trim() || '',
+          referenceDocNumber: input.referenceDocNumber?.trim() || '',
+          warehouseId: input.warehouseId,
+          notes: input.notes?.trim() || '',
+          lines: (input.lines && input.lines.length
+            ? input.lines
+            : [{ id: uid('retl'), productId: '', qty: 1, reason: 'Defect or damage', destination: 'restock' as ReturnDestination }]
+          ).map((l) => ({ ...l, id: l.id || uid('retl') })),
+          createdAt: input.createdAt || nowIso(),
+          updatedAt: nowIso(),
+        }
+
+        const returnOrders = s.returnOrders.some((r) => r.id === id)
+          ? s.returnOrders.map((r) => (r.id === id ? body : r))
+          : [body, ...s.returnOrders]
+
+        return { ...s, returnOrders, sequences }
+      })
+      return createdId!
+    }
+
+    const advanceReturnStatus: StoreApi['advanceReturnStatus'] = (id, nextStatus, dispositions) => {
+      let error: string | null = null
+      setState((s) => {
+        const ret = s.returnOrders.find((r) => r.id === id)
+        if (!ret) {
+          error = 'Return order not found.'
+          return s
+        }
+
+        let next = s
+        const ledgerAdds = []
+
+        // If completed or final status, execute inventory adjustments
+        if (nextStatus === 'completed' || nextStatus === 'restocked') {
+          const whLocs = s.locations.filter((l) => l.warehouseId === ret.warehouseId && l.type === 'internal')
+          const stockLoc = whLocs.find((l) => l.code.endsWith('/Stock')) || whLocs[0]
+          const lossLoc = s.locations.find((l) => l.type === 'inventory_loss') || { id: 'loc_loss' }
+          const vendorLoc = s.locations.find((l) => l.type === 'vendor') || { id: 'loc_vendor' }
+          const customerLoc = s.locations.find((l) => l.type === 'customer') || { id: 'loc_customer' }
+
+          if (ret.type === 'customer') {
+            for (const line of ret.lines) {
+              const dest = dispositions?.[line.id] || line.destination || 'restock'
+              const prod = s.products.find((p) => p.id === line.productId)
+
+              if (dest === 'restock' && stockLoc) {
+                // Stock increases in main warehouse
+                next = applyQty(next, line.productId, stockLoc.id, line.qty)
+                ledgerAdds.push({
+                  id: uid('led'),
+                  date: nowIso(),
+                  productId: line.productId,
+                  fromLocationId: customerLoc.id,
+                  toLocationId: stockLoc.id,
+                  qty: line.qty,
+                  type: 'return' as DocType,
+                  documentId: ret.id,
+                  documentNumber: ret.number,
+                  note: `Customer return restocked: ${ret.number}`,
+                  userId: s.sessionUserId || 'system',
+                  unitCost: prod?.costPrice ?? 30,
+                })
+              } else if (lossLoc) {
+                // Damaged/Scrap routed to inventory loss
+                next = applyQty(next, line.productId, lossLoc.id, line.qty)
+                ledgerAdds.push({
+                  id: uid('led'),
+                  date: nowIso(),
+                  productId: line.productId,
+                  fromLocationId: customerLoc.id,
+                  toLocationId: lossLoc.id,
+                  qty: line.qty,
+                  type: 'adjustment' as DocType,
+                  documentId: ret.id,
+                  documentNumber: ret.number,
+                  note: `Customer return scrap/loss (${dest}): ${ret.number}`,
+                  userId: s.sessionUserId || 'system',
+                  unitCost: prod?.costPrice ?? 30,
+                })
+              }
+            }
+          } else {
+            // Vendor return
+            for (const line of ret.lines) {
+              const prod = s.products.find((p) => p.id === line.productId)
+              if (stockLoc) {
+                next = applyQty(next, line.productId, stockLoc.id, -line.qty)
+                next = applyQty(next, line.productId, vendorLoc.id, line.qty)
+                ledgerAdds.push({
+                  id: uid('led'),
+                  date: nowIso(),
+                  productId: line.productId,
+                  fromLocationId: stockLoc.id,
+                  toLocationId: vendorLoc.id,
+                  qty: line.qty,
+                  type: 'return' as DocType,
+                  documentId: ret.id,
+                  documentNumber: ret.number,
+                  note: `Vendor return sent: ${ret.number}`,
+                  userId: s.sessionUserId || 'system',
+                  unitCost: prod?.costPrice ?? 30,
+                })
+              }
+            }
+          }
+        }
+
+        const updatedLines = ret.lines.map((l) => ({
+          ...l,
+          disposition: dispositions?.[l.id] || l.disposition || l.destination,
+        }))
+
+        return {
+          ...next,
+          ledger: [...ledgerAdds, ...next.ledger],
+          returnOrders: next.returnOrders.map((r) =>
+            r.id === id
+              ? {
+                  ...r,
+                  status: nextStatus,
+                  lines: updatedLines,
+                  completedAt: nextStatus === 'completed' ? nowIso() : r.completedAt,
+                  updatedAt: nowIso(),
+                }
+              : r,
+          ),
+        }
+      })
+      return error
+    }
 
     return {
       state,
@@ -531,6 +1460,27 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       validateDocument,
       cancelDocument,
       defaultLocations,
+
+      // New Addon APIs
+      saveVendor,
+      toggleVendorStatus,
+      deleteVendor,
+      saveCustomer,
+      toggleCustomerStatus,
+      deleteCustomer,
+      savePurchaseOrder,
+      sendPurchaseOrder,
+      receivePurchaseOrder,
+      cancelPurchaseOrder,
+      duplicatePurchaseOrder,
+      saveSalesOrder,
+      confirmSalesOrder,
+      reserveSalesOrderStock,
+      advanceSalesOrderStatus,
+      cancelSalesOrder,
+      duplicateSalesOrder,
+      saveReturnOrder,
+      advanceReturnStatus,
     }
   }, [state, currentUser])
 
@@ -545,4 +1495,42 @@ export function useStore() {
 
 export function emptyLine(): DocumentLine {
   return { id: uid('ln'), productId: '', qty: 1 }
+}
+
+export function emptyPoLine(): PurchaseOrderLine {
+  return {
+    id: uid('pol'),
+    productId: '',
+    orderedQty: 10,
+    receivedQty: 0,
+    unitCost: 25,
+    taxRate: 10,
+    subtotal: 250,
+    tax: 25,
+    total: 275,
+  }
+}
+
+export function emptySoLine(): SalesOrderLine {
+  return {
+    id: uid('sol'),
+    productId: '',
+    qty: 1,
+    unitPrice: 50,
+    discount: 0,
+    taxRate: 8,
+    subtotal: 50,
+    tax: 4,
+    total: 54,
+  }
+}
+
+export function emptyReturnLine(): ReturnLine {
+  return {
+    id: uid('retl'),
+    productId: '',
+    qty: 1,
+    reason: 'Damaged or defective',
+    destination: 'restock',
+  }
 }

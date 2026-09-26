@@ -1,28 +1,65 @@
 import { NavLink, Navigate, Outlet, useLocation, useNavigate } from 'react-router-dom'
 import {
   ArrowLeftRight,
+  BarChart3,
   Boxes,
+  Building2,
+  CircleDollarSign,
   ClipboardList,
+  FileSpreadsheet,
   History,
   LayoutDashboard,
   LogOut,
   PackageMinus,
   PackagePlus,
+  RotateCcw,
+  ShoppingBag,
   SlidersHorizontal,
+  Sparkles,
+  Undo2,
   UserRound,
+  Users,
   Warehouse,
 } from 'lucide-react'
 import { useStore } from '../store'
 import { lowStockItems } from '../lib/inventory'
 
-const nav = [
-  { to: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
-  { to: '/products', label: 'Products', icon: Boxes },
-  { to: '/receipts', label: 'Receipts', icon: PackagePlus, group: 'Operations' },
-  { to: '/deliveries', label: 'Delivery Orders', icon: PackageMinus, group: 'Operations' },
-  { to: '/transfers', label: 'Internal Transfers', icon: ArrowLeftRight, group: 'Operations' },
-  { to: '/adjustments', label: 'Inventory Adjustment', icon: SlidersHorizontal, group: 'Operations' },
-  { to: '/history', label: 'Move History', icon: History },
+interface NavItem {
+  to: string
+  label: string
+  icon: any
+  group?: string
+}
+
+const nav: NavItem[] = [
+  // INVENTORY
+  { to: '/dashboard', label: 'Dashboard', icon: LayoutDashboard, group: 'Inventory' },
+  { to: '/products', label: 'Products', icon: Boxes, group: 'Inventory' },
+  { to: '/receipts', label: 'Receipts', icon: PackagePlus, group: 'Inventory' },
+  { to: '/deliveries', label: 'Delivery Orders', icon: PackageMinus, group: 'Inventory' },
+  { to: '/transfers', label: 'Internal Transfers', icon: ArrowLeftRight, group: 'Inventory' },
+  { to: '/adjustments', label: 'Inventory Adjustment', icon: SlidersHorizontal, group: 'Inventory' },
+  { to: '/history', label: 'Move History', icon: History, group: 'Inventory' },
+  { to: '/intelligence', label: 'Intelligence', icon: Sparkles, group: 'Inventory' },
+  { to: '/valuation', label: 'Stock Valuation', icon: CircleDollarSign, group: 'Inventory' },
+
+  // SALES
+  { to: '/customers', label: 'Customers', icon: Users, group: 'Sales' },
+  { to: '/sales-orders', label: 'Sales Orders', icon: ShoppingBag, group: 'Sales' },
+  { to: '/returns?type=customer', label: 'Customer Returns', icon: RotateCcw, group: 'Sales' },
+
+  // PURCHASING
+  { to: '/vendors', label: 'Vendors', icon: Building2, group: 'Purchasing' },
+  { to: '/purchase-orders', label: 'Purchase Orders', icon: FileSpreadsheet, group: 'Purchasing' },
+  { to: '/returns?type=vendor', label: 'Vendor Returns', icon: Undo2, group: 'Purchasing' },
+
+  // REPORTS
+  { to: '/reports?type=inventory', label: 'Inventory Reports', icon: BarChart3, group: 'Reports' },
+  { to: '/reports?type=sales', label: 'Sales Reports', icon: BarChart3, group: 'Reports' },
+  { to: '/reports?type=purchasing', label: 'Purchasing Reports', icon: BarChart3, group: 'Reports' },
+  { to: '/reports?type=valuation', label: 'Valuation Reports', icon: BarChart3, group: 'Reports' },
+
+  // SETTING
   { to: '/settings/warehouses', label: 'Warehouse', icon: Warehouse, group: 'Setting' },
 ]
 
@@ -31,6 +68,17 @@ export function AppShell() {
   const navigate = useNavigate()
   const location = useLocation()
   const alerts = lowStockItems(state).length
+
+  const isNavActive = (to: string) => {
+    const [toPath, toQuery] = to.split('?')
+    if (toQuery) {
+      return location.pathname === toPath && location.search.includes(toQuery)
+    }
+    if (toPath === '/dashboard') {
+      return location.pathname === '/dashboard'
+    }
+    return location.pathname === toPath || location.pathname.startsWith(`${toPath}/`)
+  }
 
   return (
     <div className="flex min-h-svh bg-[#f4f6fb]">
@@ -43,29 +91,31 @@ export function AppShell() {
           </div>
         </div>
         <nav className="ss-scroll flex-1 space-y-1 overflow-y-auto px-3 pb-4">
-          {nav.map((item, i) => (
-            <div key={item.to}>
-              {item.group && nav[i - 1]?.group !== item.group ? (
-                <div className="mt-4 mb-1 px-3 text-[10px] font-semibold uppercase tracking-[0.16em] text-slate-500">
-                  {item.group}
-                </div>
-              ) : null}
-              <NavLink
-                to={item.to}
-                className={({ isActive }) =>
-                  `flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm transition ${
-                    isActive ? 'bg-white/10 text-white' : 'text-slate-300 hover:bg-white/5 hover:text-white'
-                  }`
-                }
-              >
-                <item.icon size={16} />
-                <span className="flex-1">{item.label}</span>
-                {item.to === '/products' && alerts > 0 ? (
-                  <span className="rounded-full bg-rose-500 px-1.5 text-[10px] font-bold text-white">{alerts}</span>
+          {nav.map((item, i) => {
+            const active = isNavActive(item.to)
+            const showGroup = item.group && nav[i - 1]?.group !== item.group
+            return (
+              <div key={item.to}>
+                {showGroup ? (
+                  <div className="mt-4 mb-1.5 px-3 text-[10px] font-semibold uppercase tracking-[0.16em] text-slate-500">
+                    {item.group}
+                  </div>
                 ) : null}
-              </NavLink>
-            </div>
-          ))}
+                <NavLink
+                  to={item.to}
+                  className={`flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm transition ${
+                    active ? 'bg-white/10 text-white font-medium shadow-sm' : 'text-slate-300 hover:bg-white/5 hover:text-white'
+                  }`}
+                >
+                  <item.icon size={16} className={active ? 'text-brand-light' : 'text-slate-400'} />
+                  <span className="flex-1">{item.label}</span>
+                  {item.to === '/products' && alerts > 0 ? (
+                    <span className="rounded-full bg-rose-500 px-1.5 text-[10px] font-bold text-white">{alerts}</span>
+                  ) : null}
+                </NavLink>
+              </div>
+            )
+          })}
         </nav>
         <div className="border-t border-white/10 p-3">
           <div className="mb-1 px-3 text-[10px] font-semibold uppercase tracking-[0.16em] text-slate-500">
