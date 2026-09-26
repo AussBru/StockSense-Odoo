@@ -61,9 +61,9 @@ export function OperationList({ type }: { type: DocType }) {
       <div className="flex items-start justify-between">
         <div>
           <h1 className="text-2xl font-semibold">{meta.list}</h1>
-          <p className="text-sm text-muted">{meta.hint}</p>
+          <p className="text-sm text-fg-muted">{meta.hint}</p>
         </div>
-        <Link to={meta.newPath} className="rounded-lg bg-brand px-4 py-2 text-sm font-semibold text-white">
+        <Link to={meta.newPath} className="rounded-lg bg-brand px-4 py-2 text-sm font-semibold text-accent-fg">
           New
         </Link>
       </div>
@@ -78,9 +78,9 @@ export function OperationList({ type }: { type: DocType }) {
           <option value="canceled">Canceled</option>
         </select>
       </div>
-      <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white">
+      <div className="overflow-hidden rounded-2xl border border-line bg-surface">
         <table className="w-full text-left text-sm">
-          <thead className="bg-slate-50 text-xs uppercase text-slate-500">
+          <thead className="bg-surface-2 text-xs uppercase text-fg-muted">
             <tr>
               <th className="px-4 py-3">Reference</th>
               <th className="px-4 py-3">From</th>
@@ -96,7 +96,7 @@ export function OperationList({ type }: { type: DocType }) {
               const to = state.locations.find((l) => l.id === doc.destLocationId)
               const wh = state.warehouses.find((w) => w.id === doc.warehouseId)
               return (
-                <tr key={doc.id} className="border-t border-slate-100">
+                <tr key={doc.id} className="border-t border-line-soft">
                   <td className="px-4 py-3 font-medium">
                     <Link className="text-brand hover:underline" to={hrefFor(type, doc.id)}>
                       {doc.number}
@@ -108,13 +108,13 @@ export function OperationList({ type }: { type: DocType }) {
                   <td className="px-4 py-3">
                     <StatusBadge status={doc.status} />
                   </td>
-                  <td className="px-4 py-3 text-slate-500">{doc.scheduledDate}</td>
+                  <td className="px-4 py-3 text-fg-muted">{doc.scheduledDate}</td>
                 </tr>
               )
             })}
             {rows.length === 0 ? (
               <tr>
-                <td colSpan={6} className="px-4 py-10 text-center text-slate-400">
+                <td colSpan={6} className="px-4 py-10 text-center text-fg-subtle">
                   No documents yet.
                 </td>
               </tr>
@@ -198,18 +198,18 @@ export function OperationForm({ type }: { type: DocType }) {
     <form onSubmit={onSave} className="space-y-5">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <div className="text-xs uppercase tracking-wide text-slate-400">{meta.list}</div>
+          <div className="text-xs uppercase tracking-wide text-fg-subtle">{meta.list}</div>
           <h1 className="text-2xl font-semibold">{isNew ? `New ${meta.list.slice(0, -1)}` : doc?.number}</h1>
         </div>
         <div className="flex flex-wrap items-center gap-2">
           {doc ? <StatusBadge status={doc.status} /> : null}
           {!locked ? (
-            <button type="submit" className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-medium">
+            <button type="submit" className="rounded-lg border border-line bg-surface px-3 py-2 text-sm font-medium">
               Save draft
             </button>
           ) : null}
           {(!doc || doc.status === 'draft') && (
-            <button type="button" className="rounded-lg bg-slate-900 px-3 py-2 text-sm font-semibold text-white" onClick={() => run(confirmDocument)}>
+            <button type="button" className="rounded-lg bg-accent px-3 py-2 text-sm font-semibold text-accent-fg" onClick={() => run(confirmDocument)}>
               Confirm
             </button>
           )}
@@ -224,7 +224,7 @@ export function OperationForm({ type }: { type: DocType }) {
             </button>
           ) : null}
           {doc && doc.status !== 'done' && doc.status !== 'canceled' && doc.status !== 'draft' ? (
-            <button type="button" className="rounded-lg bg-brand px-3 py-2 text-sm font-semibold text-white" onClick={() => run(validateDocument)}>
+            <button type="button" className="rounded-lg bg-brand px-3 py-2 text-sm font-semibold text-accent-fg" onClick={() => run(validateDocument)}>
               Validate
             </button>
           ) : null}
@@ -247,7 +247,7 @@ export function OperationForm({ type }: { type: DocType }) {
 
       {error ? <div className="rounded-lg bg-rose-50 px-3 py-2 text-sm text-rose-700">{error}</div> : null}
 
-      <div className="grid gap-4 rounded-2xl border border-slate-200 bg-white p-5 md:grid-cols-2">
+      <div className="grid gap-4 rounded-2xl border border-line bg-surface p-5 md:grid-cols-2">
         <Field label="Warehouse">
           <select className={inputClass} disabled={locked} value={warehouseId} onChange={(e) => applyWarehouse(e.target.value)}>
             {state.warehouses.map((w) => (
@@ -306,9 +306,9 @@ export function OperationForm({ type }: { type: DocType }) {
         </div>
       </div>
 
-      <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white">
+      <div className="overflow-hidden rounded-2xl border border-line bg-surface">
         <table className="w-full text-sm">
-          <thead className="bg-slate-50 text-left text-xs uppercase text-slate-500">
+          <thead className="bg-surface-2 text-left text-xs uppercase text-fg-muted">
             <tr>
               <th className="px-4 py-3">Product</th>
               <th className="px-4 py-3">SKU</th>
@@ -322,7 +322,7 @@ export function OperationForm({ type }: { type: DocType }) {
               const p = state.products.find((x) => x.id === line.productId)
               const theoretical = line.productId ? qtyAt(state, line.productId, sourceLocationId) : 0
               return (
-                <tr key={line.id} className="border-t border-slate-100">
+                <tr key={line.id} className="border-t border-line-soft">
                   <td className="px-4 py-2">
                     <select
                       className={inputClass}
@@ -398,7 +398,7 @@ export function OperationForm({ type }: { type: DocType }) {
           </tbody>
         </table>
         {!locked ? (
-          <button type="button" className="w-full border-t border-slate-100 py-2 text-sm text-brand" onClick={() => setLines((ls) => [...ls, emptyLine()])}>
+          <button type="button" className="w-full border-t border-line-soft py-2 text-sm text-brand" onClick={() => setLines((ls) => [...ls, emptyLine()])}>
             Add a product
           </button>
         ) : null}
@@ -409,7 +409,7 @@ export function OperationForm({ type }: { type: DocType }) {
 
 function Step({ done, label }: { done: boolean; label: string }) {
   return (
-    <span className={`rounded-full px-2.5 py-1 font-semibold ${done ? 'bg-emerald-100 text-emerald-800' : 'bg-slate-100 text-slate-500'}`}>
+    <span className={`rounded-full px-2.5 py-1 font-semibold ${done ? 'bg-$1-100 text-$1-800 dark:bg-$1-500/20 dark:text-$1-300' : 'bg-surface-2 text-fg-muted'}`}>
       {label}
     </span>
   )

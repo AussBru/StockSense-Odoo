@@ -7,15 +7,22 @@ import {
   CircleDollarSign,
   ClipboardList,
   FileSpreadsheet,
+  FlaskConical,
+  Hash,
   History,
   LayoutDashboard,
+  Layers,
   LogOut,
   PackageMinus,
   PackagePlus,
+  Package2,
   RotateCcw,
+  ScanLine,
   ShoppingBag,
   SlidersHorizontal,
   Sparkles,
+  Tag,
+  Truck,
   Undo2,
   UserRound,
   Users,
@@ -23,6 +30,7 @@ import {
 } from 'lucide-react'
 import { useStore } from '../store'
 import { lowStockItems } from '../lib/inventory'
+import { ThemeToggle } from './ThemeToggle'
 
 interface NavItem {
   to: string
@@ -42,6 +50,18 @@ const nav: NavItem[] = [
   { to: '/history', label: 'Move History', icon: History, group: 'Inventory' },
   { to: '/intelligence', label: 'Intelligence', icon: Sparkles, group: 'Inventory' },
   { to: '/valuation', label: 'Stock Valuation', icon: CircleDollarSign, group: 'Inventory' },
+
+  // WAREHOUSE OPERATIONS
+  { to: '/warehouse-dashboard', label: 'WH Dashboard', icon: LayoutDashboard, group: 'Warehouse Ops' },
+  { to: '/variants', label: 'Product Variants', icon: Tag, group: 'Warehouse Ops' },
+  { to: '/lots', label: 'Lots & Batches', icon: FlaskConical, group: 'Warehouse Ops' },
+  { to: '/serials', label: 'Serial Numbers', icon: Hash, group: 'Warehouse Ops' },
+  { to: '/picking', label: 'Picking', icon: ScanLine, group: 'Warehouse Ops' },
+  { to: '/packing', label: 'Packing', icon: Package2, group: 'Warehouse Ops' },
+  { to: '/shipping', label: 'Shipping', icon: Truck, group: 'Warehouse Ops' },
+  { to: '/cycle-counts', label: 'Cycle Counts', icon: ClipboardList, group: 'Warehouse Ops' },
+  { to: '/zones', label: 'Zones & Locations', icon: Layers, group: 'Warehouse Ops' },
+  { to: '/putaway', label: 'Putaway Rules', icon: ArrowLeftRight, group: 'Warehouse Ops' },
 
   // SALES
   { to: '/customers', label: 'Customers', icon: Users, group: 'Sales' },
@@ -81,13 +101,15 @@ export function AppShell() {
   }
 
   return (
-    <div className="flex min-h-svh bg-[#f4f6fb]">
-      <aside className="flex w-64 shrink-0 flex-col bg-sidebar text-slate-200">
+    <div className="flex min-h-svh bg-canvas">
+      <aside className="flex w-64 shrink-0 flex-col bg-sidebar text-on-sidebar">
         <div className="flex items-center gap-2 px-5 py-5">
-          <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-brand text-white font-bold">S</div>
+          <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-on-sidebar text-sidebar font-bold">
+            S
+          </div>
           <div>
-            <div className="text-sm font-semibold tracking-wide text-white">StockSense</div>
-            <div className="text-[11px] text-slate-400">Inventory OS</div>
+            <div className="text-sm font-semibold tracking-wide text-on-sidebar">StockSense</div>
+            <div className="text-[11px] text-on-sidebar/50">Inventory OS</div>
           </div>
         </div>
         <nav className="ss-scroll flex-1 space-y-1 overflow-y-auto px-3 pb-4">
@@ -97,35 +119,41 @@ export function AppShell() {
             return (
               <div key={item.to}>
                 {showGroup ? (
-                  <div className="mt-4 mb-1.5 px-3 text-[10px] font-semibold uppercase tracking-[0.16em] text-slate-500">
+                  <div className="mt-4 mb-1.5 px-3 text-[10px] font-semibold uppercase tracking-[0.16em] text-on-sidebar/40">
                     {item.group}
                   </div>
                 ) : null}
                 <NavLink
                   to={item.to}
                   className={`flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm transition ${
-                    active ? 'bg-white/10 text-white font-medium shadow-sm' : 'text-slate-300 hover:bg-white/5 hover:text-white'
+                    active
+                      ? 'bg-on-sidebar/10 text-on-sidebar font-medium shadow-sm'
+                      : 'text-on-sidebar/60 hover:bg-on-sidebar/5 hover:text-on-sidebar'
                   }`}
                 >
-                  <item.icon size={16} className={active ? 'text-brand-light' : 'text-slate-400'} />
+                  <item.icon size={16} className={active ? 'text-on-sidebar' : 'text-on-sidebar/40'} />
                   <span className="flex-1">{item.label}</span>
                   {item.to === '/products' && alerts > 0 ? (
-                    <span className="rounded-full bg-rose-500 px-1.5 text-[10px] font-bold text-white">{alerts}</span>
+                    <span className="rounded-full bg-rose-500 px-1.5 text-[10px] font-bold text-white">
+                      {alerts}
+                    </span>
                   ) : null}
                 </NavLink>
               </div>
             )
           })}
         </nav>
-        <div className="border-t border-white/10 p-3">
-          <div className="mb-1 px-3 text-[10px] font-semibold uppercase tracking-[0.16em] text-slate-500">
+        <div className="border-t border-on-sidebar/10 p-3">
+          <div className="mb-1 px-3 text-[10px] font-semibold uppercase tracking-[0.16em] text-on-sidebar/40">
             Profile Menu
           </div>
           <NavLink
             to="/profile"
             className={({ isActive }) =>
               `flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm ${
-                isActive ? 'bg-white/10 text-white' : 'text-slate-300 hover:bg-white/5'
+                isActive
+                  ? 'bg-on-sidebar/10 text-on-sidebar'
+                  : 'text-on-sidebar/60 hover:bg-on-sidebar/5'
               }`
             }
           >
@@ -138,37 +166,40 @@ export function AppShell() {
               logout()
               navigate('/login')
             }}
-            className="flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-sm text-slate-300 hover:bg-white/5"
+            className="flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-sm text-on-sidebar/60 hover:bg-on-sidebar/5"
           >
             <LogOut size={16} />
             Logout
           </button>
-          <div className="mt-2 flex items-center gap-2 rounded-lg bg-white/5 px-3 py-2">
-            <div className="flex h-8 w-8 items-center justify-center rounded-full bg-brand text-xs font-bold text-white">
+          <div className="mt-2 flex items-center gap-2 rounded-lg bg-on-sidebar/5 px-3 py-2">
+            <div className="flex h-8 w-8 items-center justify-center rounded-full bg-on-sidebar text-xs font-bold text-sidebar">
               {currentUser?.name.slice(0, 1) ?? 'U'}
             </div>
             <div className="min-w-0">
-              <div className="truncate text-xs font-medium text-white">{currentUser?.name}</div>
-              <div className="truncate text-[11px] text-slate-400">{currentUser?.email}</div>
+              <div className="truncate text-xs font-medium text-on-sidebar">{currentUser?.name}</div>
+              <div className="truncate text-[11px] text-on-sidebar/50">{currentUser?.email}</div>
             </div>
           </div>
         </div>
       </aside>
       <div className="flex min-w-0 flex-1 flex-col">
-        <header className="flex h-14 items-center justify-between border-b border-slate-200 bg-white px-6">
-          <div className="flex items-center gap-2 text-sm text-slate-500">
-            <ClipboardList size={16} />
-            <span className="capitalize">
+        <header className="flex h-14 shrink-0 items-center justify-between gap-3 border-b border-line bg-surface px-6">
+          <div className="flex min-w-0 items-center gap-2 text-sm text-fg-muted">
+            <ClipboardList size={16} className="shrink-0" />
+            <span className="truncate capitalize">
               {location.pathname.split('/').filter(Boolean)[0]?.replace('-', ' ') || 'dashboard'}
             </span>
           </div>
-          {alerts > 0 ? (
-            <div className="rounded-full bg-rose-50 px-3 py-1 text-xs font-medium text-rose-700">
-              {alerts} low / out of stock alert{alerts === 1 ? '' : 's'}
-            </div>
-          ) : (
-            <div className="text-xs text-slate-400">All stock levels healthy</div>
-          )}
+          <div className="flex shrink-0 items-center gap-3">
+            {alerts > 0 ? (
+              <div className="whitespace-nowrap rounded-full bg-rose-50 px-3 py-1 text-xs font-medium text-rose-700 dark:bg-rose-500/15 dark:text-rose-300">
+                {alerts} low / out of stock alert{alerts === 1 ? '' : 's'}
+              </div>
+            ) : (
+              <div className="whitespace-nowrap text-xs text-fg-subtle">All stock levels healthy</div>
+            )}
+            <ThemeToggle />
+          </div>
         </header>
         <main className="ss-scroll flex-1 overflow-auto p-6">
           <Outlet />
