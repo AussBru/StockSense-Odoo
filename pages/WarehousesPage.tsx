@@ -36,10 +36,10 @@ export function WarehousesPage() {
     <div className="space-y-6">
       <div>
         <h1 className="text-2xl font-semibold">Warehouses & locations</h1>
-        <p className="text-sm text-muted">Multi-warehouse stock with racks, docks, and production floors.</p>
+        <p className="text-sm text-fg-muted">Multi-warehouse stock with racks, docks, and production floors.</p>
       </div>
       <div className="grid gap-6 lg:grid-cols-2">
-        <form onSubmit={addWh} className="space-y-3 rounded-2xl border border-slate-200 bg-white p-5">
+        <form onSubmit={addWh} className="space-y-3 rounded-2xl border border-line bg-surface p-5">
           <h2 className="font-semibold">New warehouse</h2>
           <Field label="Name">
             <input className={inputClass} value={name} onChange={(e) => setName(e.target.value)} required />
@@ -50,11 +50,11 @@ export function WarehousesPage() {
           <Field label="Address">
             <input className={inputClass} value={address} onChange={(e) => setAddress(e.target.value)} />
           </Field>
-          <button className="rounded-lg bg-brand px-4 py-2 text-sm font-semibold text-white" type="submit">
+          <button className="rounded-lg bg-brand px-4 py-2 text-sm font-semibold text-accent-fg" type="submit">
             Create warehouse
           </button>
         </form>
-        <form onSubmit={addLoc} className="space-y-3 rounded-2xl border border-slate-200 bg-white p-5">
+        <form onSubmit={addLoc} className="space-y-3 rounded-2xl border border-line bg-surface p-5">
           <h2 className="font-semibold">New internal location</h2>
           <Field label="Warehouse">
             <select className={inputClass} value={locWh} onChange={(e) => setLocWh(e.target.value)}>
@@ -71,7 +71,7 @@ export function WarehousesPage() {
           <Field label="Code">
             <input className={inputClass} value={locCode} onChange={(e) => setLocCode(e.target.value)} placeholder="WH1/RackB" />
           </Field>
-          <button className="rounded-lg bg-slate-900 px-4 py-2 text-sm font-semibold text-white" type="submit">
+          <button className="rounded-lg bg-accent px-4 py-2 text-sm font-semibold text-accent-fg" type="submit">
             Add location
           </button>
         </form>
@@ -80,18 +80,18 @@ export function WarehousesPage() {
         {state.warehouses.map((w) => {
           const locs = state.locations.filter((l) => l.warehouseId === w.id)
           return (
-            <div key={w.id} className="rounded-2xl border border-slate-200 bg-white p-5">
+            <div key={w.id} className="rounded-2xl border border-line bg-surface p-5">
               <div className="flex items-baseline justify-between">
                 <h3 className="text-lg font-semibold">
-                  {w.name} <span className="text-sm font-normal text-slate-400">{w.code}</span>
+                  {w.name} <span className="text-sm font-normal text-fg-subtle">{w.code}</span>
                 </h3>
-                <span className="text-sm text-slate-500">{w.address}</span>
+                <span className="text-sm text-fg-muted">{w.address}</span>
               </div>
               <ul className="mt-3 grid gap-2 md:grid-cols-2">
                 {locs.map((l) => (
-                  <li key={l.id} className="rounded-lg bg-slate-50 px-3 py-2 text-sm">
+                  <li key={l.id} className="rounded-lg bg-surface-2 px-3 py-2 text-sm">
                     <div className="font-medium">{l.name}</div>
-                    <div className="font-mono text-xs text-slate-500">{l.code}</div>
+                    <div className="font-mono text-xs text-fg-muted">{l.code}</div>
                   </li>
                 ))}
               </ul>

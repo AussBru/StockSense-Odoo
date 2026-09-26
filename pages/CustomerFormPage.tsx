@@ -67,19 +67,19 @@ export function CustomerFormPage() {
         <button
           type="button"
           onClick={() => navigate(-1)}
-          className="flex h-9 w-9 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-500 hover:bg-slate-50"
+          className="flex h-9 w-9 items-center justify-center rounded-lg border border-line bg-surface text-fg-muted hover:bg-surface-2"
         >
           <ArrowLeft size={16} />
         </button>
         <div>
-          <h1 className="text-2xl font-bold text-ink">{existing ? 'Edit Customer' : 'New Customer'}</h1>
-          <p className="text-sm text-muted">
+          <h1 className="text-2xl font-bold text-fg">{existing ? 'Edit Customer' : 'New Customer'}</h1>
+          <p className="text-sm text-fg-muted">
             {existing ? `Update record for ${existing.name}` : 'Register a new customer account.'}
           </p>
         </div>
       </div>
 
-      <form onSubmit={handleSubmit} className="space-y-6 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+      <form onSubmit={handleSubmit} className="space-y-6 rounded-2xl border border-line bg-surface p-6 shadow-sm">
         {error ? <div className="rounded-lg bg-rose-50 p-3 text-sm font-medium text-rose-700">{error}</div> : null}
 
         <div className="grid gap-4 sm:grid-cols-2">
@@ -163,11 +163,11 @@ export function CustomerFormPage() {
           />
         </Field>
 
-        <div className="flex items-center justify-end gap-3 border-t border-slate-100 pt-5">
+        <div className="flex items-center justify-end gap-3 border-t border-line-soft pt-5">
           <button
             type="button"
             onClick={() => navigate(-1)}
-            className="rounded-lg border border-slate-200 px-4 py-2.5 text-sm font-semibold text-slate-600 hover:bg-slate-50"
+            className="rounded-lg border border-line px-4 py-2.5 text-sm font-semibold text-fg-soft hover:bg-surface-2"
           >
             Cancel
           </button>

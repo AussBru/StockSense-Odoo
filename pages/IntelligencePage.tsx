@@ -28,12 +28,12 @@ export function IntelligencePage() {
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <div className="flex items-center gap-2">
-            <h1 className="text-2xl font-semibold text-ink">Inventory Intelligence</h1>
+            <h1 className="text-2xl font-semibold text-fg">Inventory Intelligence</h1>
             <span className="inline-flex items-center gap-1 rounded-full bg-indigo-50 px-2.5 py-0.5 text-xs font-semibold text-brand">
               <Sparkles size={12} /> AI Analytics
             </span>
           </div>
-          <p className="text-sm text-muted">
+          <p className="text-sm text-fg-muted">
             Automated consumption analysis, safety stock calculations, aging analysis, and smart reorder triggers.
           </p>
         </div>
@@ -41,52 +41,52 @@ export function IntelligencePage() {
 
       {/* Metrics Row 1: High Level Capital & Health */}
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+        <div className="rounded-2xl border border-line bg-surface p-5 shadow-sm">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold uppercase tracking-wider text-muted">Total Stock Valuation</span>
+            <span className="text-xs font-semibold uppercase tracking-wider text-fg-muted">Total Stock Valuation</span>
             <DollarSign className="text-brand" size={20} />
           </div>
-          <div className="mt-2 text-2xl font-bold text-ink">${metrics.totalInventoryValue.toLocaleString()}</div>
-          <div className="mt-1 text-xs text-slate-500">{metrics.totalUnits} physical units in stock</div>
+          <div className="mt-2 text-2xl font-bold text-fg">${metrics.totalInventoryValue.toLocaleString()}</div>
+          <div className="mt-1 text-xs text-fg-muted">{metrics.totalUnits} physical units in stock</div>
         </div>
 
-        <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+        <div className="rounded-2xl border border-line bg-surface p-5 shadow-sm">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold uppercase tracking-wider text-muted">Dead Stock Value</span>
+            <span className="text-xs font-semibold uppercase tracking-wider text-fg-muted">Dead Stock Value</span>
             <AlertTriangle className="text-rose-600" size={20} />
           </div>
           <div className="mt-2 text-2xl font-bold text-rose-600">${metrics.deadStockValue.toLocaleString()}</div>
-          <div className="mt-1 text-xs text-slate-500">{metrics.deadStockCount} SKUs without recent velocity</div>
+          <div className="mt-1 text-xs text-fg-muted">{metrics.deadStockCount} SKUs without recent velocity</div>
         </div>
 
-        <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+        <div className="rounded-2xl border border-line bg-surface p-5 shadow-sm">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold uppercase tracking-wider text-muted">Stock Turnover</span>
+            <span className="text-xs font-semibold uppercase tracking-wider text-fg-muted">Stock Turnover</span>
             <RefreshCw className="text-emerald-600" size={20} />
           </div>
           <div className="mt-2 text-2xl font-bold text-emerald-700">{metrics.stockTurnover}x / year</div>
-          <div className="mt-1 text-xs text-slate-500">Annualized inventory velocity</div>
+          <div className="mt-1 text-xs text-fg-muted">Annualized inventory velocity</div>
         </div>
 
-        <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+        <div className="rounded-2xl border border-line bg-surface p-5 shadow-sm">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold uppercase tracking-wider text-muted">Avg Inventory Age</span>
+            <span className="text-xs font-semibold uppercase tracking-wider text-fg-muted">Avg Inventory Age</span>
             <Clock className="text-indigo-600" size={20} />
           </div>
-          <div className="mt-2 text-2xl font-bold text-ink">{metrics.averageInventoryAgeDays} days</div>
-          <div className="mt-1 text-xs text-slate-500">Weighted shelf life since receipt</div>
+          <div className="mt-2 text-2xl font-bold text-fg">{metrics.averageInventoryAgeDays} days</div>
+          <div className="mt-1 text-xs text-fg-muted">Weighted shelf life since receipt</div>
         </div>
       </div>
 
       {/* Tabs */}
-      <div className="flex border-b border-slate-200">
+      <div className="flex border-b border-line">
         <button
           type="button"
           onClick={() => setActiveTab('reorder')}
           className={`flex items-center gap-2 border-b-2 px-5 py-3 text-sm font-semibold transition ${
             activeTab === 'reorder'
               ? 'border-brand text-brand'
-              : 'border-transparent text-slate-500 hover:text-slate-800'
+              : 'border-transparent text-fg-muted hover:text-fg'
           }`}
         >
           <ShoppingBag size={16} />
@@ -99,7 +99,7 @@ export function IntelligencePage() {
           className={`flex items-center gap-2 border-b-2 px-5 py-3 text-sm font-semibold transition ${
             activeTab === 'dead'
               ? 'border-brand text-brand'
-              : 'border-transparent text-slate-500 hover:text-slate-800'
+              : 'border-transparent text-fg-muted hover:text-fg'
           }`}
         >
           <TrendingDown size={16} className="text-rose-500" />
@@ -112,7 +112,7 @@ export function IntelligencePage() {
           className={`flex items-center gap-2 border-b-2 px-5 py-3 text-sm font-semibold transition ${
             activeTab === 'fast'
               ? 'border-brand text-brand'
-              : 'border-transparent text-slate-500 hover:text-slate-800'
+              : 'border-transparent text-fg-muted hover:text-fg'
           }`}
         >
           <Flame size={16} className="text-amber-500" />
@@ -125,10 +125,10 @@ export function IntelligencePage() {
           className={`flex items-center gap-2 border-b-2 px-5 py-3 text-sm font-semibold transition ${
             activeTab === 'slow'
               ? 'border-brand text-brand'
-              : 'border-transparent text-slate-500 hover:text-slate-800'
+              : 'border-transparent text-fg-muted hover:text-fg'
           }`}
         >
-          <TrendingUp size={16} className="text-slate-500" />
+          <TrendingUp size={16} className="text-fg-muted" />
           <span>Slow-Moving SKUs ({metrics.slowMovingCount})</span>
         </button>
       </div>
@@ -138,18 +138,18 @@ export function IntelligencePage() {
         <div className="space-y-4">
           <div className="flex items-center justify-between">
             <div>
-              <h2 className="font-semibold text-ink">Actionable Reorder Recommendations</h2>
-              <p className="text-xs text-muted">
+              <h2 className="font-semibold text-fg">Actionable Reorder Recommendations</h2>
+              <p className="text-xs text-fg-muted">
                 Calculated dynamically based on: Available Qty (On Hand - Reserved), Min Qty, Daily Consumption Rate,
                 and Supplier Lead Times.
               </p>
             </div>
           </div>
 
-          <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+          <div className="overflow-hidden rounded-2xl border border-line bg-surface shadow-sm">
             <div className="overflow-x-auto">
               <table className="w-full text-left text-sm">
-                <thead className="border-b border-slate-100 bg-slate-50 text-xs font-semibold uppercase text-slate-500">
+                <thead className="border-b border-line-soft bg-surface-2 text-xs font-semibold uppercase text-fg-muted">
                   <tr>
                     <th className="px-4 py-3.5">Product / SKU</th>
                     <th className="px-4 py-3.5 text-right">Available (Free)</th>
@@ -162,40 +162,40 @@ export function IntelligencePage() {
                     <th className="px-4 py-3.5 text-right">Action</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-100">
+                <tbody className="divide-y divide-line-soft">
                   {metrics.suggestions.length === 0 ? (
                     <tr>
-                      <td colSpan={9} className="px-4 py-12 text-center text-sm text-slate-400">
+                      <td colSpan={9} className="px-4 py-12 text-center text-sm text-fg-subtle">
                         All products are currently well-stocked. No immediate reorders required!
                       </td>
                     </tr>
                   ) : (
                     metrics.suggestions.map((item) => (
-                      <tr key={item.product.id} className="transition hover:bg-slate-50/70">
+                      <tr key={item.product.id} className="transition hover:bg-surface-2/70">
                         <td className="px-4 py-3.5">
-                          <Link to={`/products/${item.product.id}`} className="font-semibold text-ink hover:underline">
+                          <Link to={`/products/${item.product.id}`} className="font-semibold text-fg hover:underline">
                             {item.product.name}
                           </Link>
-                          <div className="font-mono text-xs text-slate-400">{item.product.sku}</div>
+                          <div className="font-mono text-xs text-fg-subtle">{item.product.sku}</div>
                         </td>
                         <td className="px-4 py-3.5 text-right font-bold text-rose-600">
                           {item.available}{' '}
-                          <span className="text-[11px] font-normal text-slate-400">
+                          <span className="text-[11px] font-normal text-fg-subtle">
                             (OH: {item.onHand}, Res: {item.reserved})
                           </span>
                         </td>
-                        <td className="px-4 py-3.5 text-right font-medium text-slate-600">{item.minQty}</td>
-                        <td className="px-4 py-3.5 text-right font-medium text-slate-700">
+                        <td className="px-4 py-3.5 text-right font-medium text-fg-soft">{item.minQty}</td>
+                        <td className="px-4 py-3.5 text-right font-medium text-fg">
                           {item.avgDailyConsumption} / day
                         </td>
                         <td className="px-4 py-3.5 text-right font-medium text-amber-600">
                           {item.estimatedStockoutDays !== null ? `${item.estimatedStockoutDays} days` : 'Immediate'}
                         </td>
-                        <td className="px-4 py-3.5 text-xs text-slate-600">
+                        <td className="px-4 py-3.5 text-xs text-fg-soft">
                           {item.primaryVendor ? (
                             <div>
-                              <div className="font-medium text-slate-800">{item.primaryVendor.companyName}</div>
-                              <div className="text-slate-400">{item.primaryVendor.leadTime} days lead time</div>
+                              <div className="font-medium text-fg">{item.primaryVendor.companyName}</div>
+                              <div className="text-fg-subtle">{item.primaryVendor.leadTime} days lead time</div>
                             </div>
                           ) : (
                             '—'
@@ -204,7 +204,7 @@ export function IntelligencePage() {
                         <td className="px-4 py-3.5 text-right font-bold text-brand">
                           +{item.suggestedQty} {item.product.uom}
                         </td>
-                        <td className="px-4 py-3.5 text-right font-semibold text-slate-900">
+                        <td className="px-4 py-3.5 text-right font-semibold text-fg">
                           ${item.estimatedCost.toLocaleString()}
                         </td>
                         <td className="px-4 py-3.5 text-right">
@@ -212,7 +212,7 @@ export function IntelligencePage() {
                             to={`/purchase-orders/new?vendorId=${item.primaryVendor?.id || ''}&productId=${
                               item.product.id
                             }&suggestedQty=${item.suggestedQty}`}
-                            className="inline-flex items-center gap-1 rounded-lg bg-brand px-3 py-1.5 text-xs font-semibold text-white shadow-sm hover:bg-brand-dark"
+                            className="inline-flex items-center gap-1 rounded-lg bg-brand px-3 py-1.5 text-xs font-semibold text-accent-fg shadow-sm hover:bg-brand-dark"
                           >
                             <span>Create PO</span>
                             <ArrowRight size={12} />
@@ -233,17 +233,17 @@ export function IntelligencePage() {
         <div className="space-y-4">
           <div className="flex items-center justify-between">
             <div>
-              <h2 className="font-semibold text-ink">Dead Stock SKUs (Zero Velocity)</h2>
-              <p className="text-xs text-muted">
+              <h2 className="font-semibold text-fg">Dead Stock SKUs (Zero Velocity)</h2>
+              <p className="text-xs text-fg-muted">
                 Products currently sitting on shelves with no outbound demand in the past 60 days. Trapped working capital:
                 <strong className="ml-1 text-rose-600">${metrics.deadStockValue.toLocaleString()}</strong>.
               </p>
             </div>
           </div>
 
-          <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+          <div className="overflow-hidden rounded-2xl border border-line bg-surface shadow-sm">
             <table className="w-full text-left text-sm">
-              <thead className="border-b border-slate-100 bg-slate-50 text-xs font-semibold uppercase text-slate-500">
+              <thead className="border-b border-line-soft bg-surface-2 text-xs font-semibold uppercase text-fg-muted">
                 <tr>
                   <th className="px-4 py-3.5">Product</th>
                   <th className="px-4 py-3.5">SKU</th>
@@ -253,10 +253,10 @@ export function IntelligencePage() {
                   <th className="px-4 py-3.5">Recommended Action</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-100">
+              <tbody className="divide-y divide-line-soft">
                 {metrics.deadStockProducts.length === 0 ? (
                   <tr>
-                    <td colSpan={6} className="px-4 py-10 text-center text-sm text-slate-400">
+                    <td colSpan={6} className="px-4 py-10 text-center text-sm text-fg-subtle">
                       Great job! No dead stock identified across your catalog.
                     </td>
                   </tr>
@@ -266,17 +266,17 @@ export function IntelligencePage() {
                     const cost = getProductUnitCost(p)
                     const value = onHand * cost
                     return (
-                      <tr key={p.id} className="transition hover:bg-slate-50/70">
-                        <td className="px-4 py-3.5 font-semibold text-slate-800">
+                      <tr key={p.id} className="transition hover:bg-surface-2/70">
+                        <td className="px-4 py-3.5 font-semibold text-fg">
                           <Link to={`/products/${p.id}`} className="hover:underline">
                             {p.name}
                           </Link>
                         </td>
-                        <td className="px-4 py-3.5 font-mono text-xs text-slate-500">{p.sku}</td>
+                        <td className="px-4 py-3.5 font-mono text-xs text-fg-muted">{p.sku}</td>
                         <td className="px-4 py-3.5 text-right font-medium">{onHand}</td>
-                        <td className="px-4 py-3.5 text-right text-slate-600">${cost.toFixed(2)}</td>
+                        <td className="px-4 py-3.5 text-right text-fg-soft">${cost.toFixed(2)}</td>
                         <td className="px-4 py-3.5 text-right font-bold text-rose-600">${value.toLocaleString()}</td>
-                        <td className="px-4 py-3.5 text-xs text-slate-600">
+                        <td className="px-4 py-3.5 text-xs text-fg-soft">
                           <span className="rounded-full bg-amber-50 px-2.5 py-1 font-medium text-amber-800">
                             Promote, Discount, or Return to Vendor
                           </span>
@@ -296,16 +296,16 @@ export function IntelligencePage() {
         <div className="space-y-4">
           <div className="flex items-center justify-between">
             <div>
-              <h2 className="font-semibold text-ink">Fast-Moving Inventory (High Velocity)</h2>
-              <p className="text-xs text-muted">
+              <h2 className="font-semibold text-fg">Fast-Moving Inventory (High Velocity)</h2>
+              <p className="text-xs text-fg-muted">
                 Top consumed and shipped items. Keep a close eye on safety stock to avoid unexpected stockouts.
               </p>
             </div>
           </div>
 
-          <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+          <div className="overflow-hidden rounded-2xl border border-line bg-surface shadow-sm">
             <table className="w-full text-left text-sm">
-              <thead className="border-b border-slate-100 bg-slate-50 text-xs font-semibold uppercase text-slate-500">
+              <thead className="border-b border-line-soft bg-surface-2 text-xs font-semibold uppercase text-fg-muted">
                 <tr>
                   <th className="px-4 py-3.5">Product</th>
                   <th className="px-4 py-3.5">SKU</th>
@@ -314,15 +314,15 @@ export function IntelligencePage() {
                   <th className="px-4 py-3.5">Velocity Tier</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-100">
+              <tbody className="divide-y divide-line-soft">
                 {metrics.fastMoving.map((item) => (
-                  <tr key={item.product.id} className="transition hover:bg-slate-50/70">
-                    <td className="px-4 py-3.5 font-semibold text-slate-800">
+                  <tr key={item.product.id} className="transition hover:bg-surface-2/70">
+                    <td className="px-4 py-3.5 font-semibold text-fg">
                       <Link to={`/products/${item.product.id}`} className="hover:underline">
                         {item.product.name}
                       </Link>
                     </td>
-                    <td className="px-4 py-3.5 font-mono text-xs text-slate-500">{item.product.sku}</td>
+                    <td className="px-4 py-3.5 font-mono text-xs text-fg-muted">{item.product.sku}</td>
                     <td className="px-4 py-3.5 text-right font-medium">{item.onHand}</td>
                     <td className="px-4 py-3.5 text-right font-bold text-emerald-700">{item.velocity} units / day</td>
                     <td className="px-4 py-3.5">
@@ -343,16 +343,16 @@ export function IntelligencePage() {
         <div className="space-y-4">
           <div className="flex items-center justify-between">
             <div>
-              <h2 className="font-semibold text-ink">Slow-Moving SKUs</h2>
-              <p className="text-xs text-muted">
+              <h2 className="font-semibold text-fg">Slow-Moving SKUs</h2>
+              <p className="text-xs text-fg-muted">
                 Products with low turnover. Consider adjusting max stocking levels to minimize holding costs.
               </p>
             </div>
           </div>
 
-          <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+          <div className="overflow-hidden rounded-2xl border border-line bg-surface shadow-sm">
             <table className="w-full text-left text-sm">
-              <thead className="border-b border-slate-100 bg-slate-50 text-xs font-semibold uppercase text-slate-500">
+              <thead className="border-b border-line-soft bg-surface-2 text-xs font-semibold uppercase text-fg-muted">
                 <tr>
                   <th className="px-4 py-3.5">Product</th>
                   <th className="px-4 py-3.5">SKU</th>
@@ -361,19 +361,19 @@ export function IntelligencePage() {
                   <th className="px-4 py-3.5">Status</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-100">
+              <tbody className="divide-y divide-line-soft">
                 {metrics.slowMoving.map((item) => (
-                  <tr key={item.product.id} className="transition hover:bg-slate-50/70">
-                    <td className="px-4 py-3.5 font-semibold text-slate-800">
+                  <tr key={item.product.id} className="transition hover:bg-surface-2/70">
+                    <td className="px-4 py-3.5 font-semibold text-fg">
                       <Link to={`/products/${item.product.id}`} className="hover:underline">
                         {item.product.name}
                       </Link>
                     </td>
-                    <td className="px-4 py-3.5 font-mono text-xs text-slate-500">{item.product.sku}</td>
+                    <td className="px-4 py-3.5 font-mono text-xs text-fg-muted">{item.product.sku}</td>
                     <td className="px-4 py-3.5 text-right font-medium">{item.onHand}</td>
-                    <td className="px-4 py-3.5 text-right text-slate-600">{item.velocity} units / day</td>
+                    <td className="px-4 py-3.5 text-right text-fg-soft">{item.velocity} units / day</td>
                     <td className="px-4 py-3.5">
-                      <span className="rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-medium text-slate-600">
+                      <span className="rounded-full bg-surface-2 px-2.5 py-0.5 text-xs font-medium text-fg-soft">
                         Low Turnover
                       </span>
                     </td>

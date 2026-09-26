@@ -69,7 +69,7 @@ export function ForgotPasswordPage() {
         </AuthForm>
       ) : (
         <AuthForm onSubmit={complete}>
-          <div className="rounded-lg border border-indigo-100 bg-indigo-50 p-3 text-sm text-indigo-900">
+          <div className="rounded-lg border border-$1-100 dark:border-$1-500/30 bg-indigo-50 p-3 text-sm text-indigo-900">
             <div className="font-semibold">Check your inbox</div>
             <div className="mt-0.5 text-xs text-indigo-700">
               We emailed a 6-digit OTP code to <span className="font-semibold text-indigo-900">{email}</span>. Valid for 10 minutes.
@@ -101,7 +101,7 @@ export function ForgotPasswordPage() {
           {error ? <p className="text-sm text-rose-600">{error}</p> : null}
           <PrimaryButton disabled={busy}>{busy ? 'Updating…' : 'Reset password'}</PrimaryButton>
 
-          <div className="flex items-center justify-between pt-1 text-xs text-slate-500">
+          <div className="flex items-center justify-between pt-1 text-xs text-fg-muted">
             <button
               type="button"
               disabled={busy}
@@ -117,14 +117,14 @@ export function ForgotPasswordPage() {
                 setOtp('')
                 setError(null)
               }}
-              className="text-slate-500 hover:underline"
+              className="text-fg-muted hover:underline"
             >
               Change email
             </button>
           </div>
         </AuthForm>
       )}
-      <p className="mt-4 text-sm text-slate-500">
+      <p className="mt-4 text-sm text-fg-muted">
         <Link className="text-brand hover:underline" to="/login">
           Back to login
         </Link>

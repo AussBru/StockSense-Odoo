@@ -33,14 +33,14 @@ export function VendorsPage() {
     <div className="space-y-6">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-2xl font-semibold text-ink">Vendor Management</h1>
-          <p className="text-sm text-muted">
+          <h1 className="text-2xl font-semibold text-fg">Vendor Management</h1>
+          <p className="text-sm text-fg-muted">
             Manage your suppliers, lead times, contact profiles, and track purchase performance.
           </p>
         </div>
         <Link
           to="/vendors/new"
-          className="inline-flex items-center gap-2 rounded-lg bg-brand px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-brand-dark"
+          className="inline-flex items-center gap-2 rounded-lg bg-brand px-4 py-2.5 text-sm font-semibold text-accent-fg shadow-sm transition hover:bg-brand-dark"
         >
           <Plus size={16} />
           New Vendor
@@ -49,43 +49,43 @@ export function VendorsPage() {
 
       {/* KPI Cards */}
       <div className="grid gap-4 sm:grid-cols-3">
-        <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+        <div className="rounded-2xl border border-line bg-surface p-5 shadow-sm">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold uppercase tracking-wider text-muted">Total Vendors</span>
+            <span className="text-xs font-semibold uppercase tracking-wider text-fg-muted">Total Vendors</span>
             <Building2 className="text-brand" size={20} />
           </div>
-          <div className="mt-2 text-2xl font-bold text-ink">{totalVendors}</div>
-          <div className="mt-1 text-xs text-slate-500">{activeVendors} active suppliers</div>
+          <div className="mt-2 text-2xl font-bold text-fg">{totalVendors}</div>
+          <div className="mt-1 text-xs text-fg-muted">{activeVendors} active suppliers</div>
         </div>
 
-        <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+        <div className="rounded-2xl border border-line bg-surface p-5 shadow-sm">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold uppercase tracking-wider text-muted">Total PO Spend</span>
+            <span className="text-xs font-semibold uppercase tracking-wider text-fg-muted">Total PO Spend</span>
             <FileText className="text-emerald-600" size={20} />
           </div>
-          <div className="mt-2 text-2xl font-bold text-ink">${totalPoSpend.toLocaleString()}</div>
-          <div className="mt-1 text-xs text-slate-500">Across received purchase orders</div>
+          <div className="mt-2 text-2xl font-bold text-fg">${totalPoSpend.toLocaleString()}</div>
+          <div className="mt-1 text-xs text-fg-muted">Across received purchase orders</div>
         </div>
 
-        <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+        <div className="rounded-2xl border border-line bg-surface p-5 shadow-sm">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold uppercase tracking-wider text-muted">Avg Lead Time</span>
+            <span className="text-xs font-semibold uppercase tracking-wider text-fg-muted">Avg Lead Time</span>
             <Clock className="text-indigo-600" size={20} />
           </div>
-          <div className="mt-2 text-2xl font-bold text-ink">
+          <div className="mt-2 text-2xl font-bold text-fg">
             {totalVendors > 0
               ? Math.round(state.vendors.reduce((s, v) => s + v.leadTime, 0) / totalVendors)
               : 0}{' '}
             days
           </div>
-          <div className="mt-1 text-xs text-slate-500">Average fulfillment window</div>
+          <div className="mt-1 text-xs text-fg-muted">Average fulfillment window</div>
         </div>
       </div>
 
       {/* Filter and Search Bar */}
       <div className="grid gap-3 sm:grid-cols-2 md:grid-cols-4">
         <div className="relative sm:col-span-2 md:col-span-3">
-          <Search className="absolute left-3 top-3 text-slate-400" size={16} />
+          <Search className="absolute left-3 top-3 text-fg-subtle" size={16} />
           <input
             className={`${inputClass} pl-9`}
             placeholder="Search by company name, code, contact person, or email..."
@@ -105,10 +105,10 @@ export function VendorsPage() {
       </div>
 
       {/* Vendors Table */}
-      <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+      <div className="overflow-hidden rounded-2xl border border-line bg-surface shadow-sm">
         <div className="overflow-x-auto">
           <table className="w-full text-left text-sm">
-            <thead className="border-b border-slate-100 bg-slate-50 text-xs font-semibold uppercase text-slate-500">
+            <thead className="border-b border-line-soft bg-surface-2 text-xs font-semibold uppercase text-fg-muted">
               <tr>
                 <th className="px-4 py-3.5">Vendor</th>
                 <th className="px-4 py-3.5">Code</th>
@@ -120,10 +120,10 @@ export function VendorsPage() {
                 <th className="px-4 py-3.5 text-right">Actions</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-100">
+            <tbody className="divide-y divide-line-soft">
               {filtered.length === 0 ? (
                 <tr>
-                  <td colSpan={8} className="px-4 py-12 text-center text-sm text-slate-400">
+                  <td colSpan={8} className="px-4 py-12 text-center text-sm text-fg-subtle">
                     No vendors found matching your filters.
                   </td>
                 </tr>
@@ -131,29 +131,29 @@ export function VendorsPage() {
                 filtered.map((v) => {
                   const poCount = state.purchaseOrders.filter((p) => p.vendorId === v.id).length
                   return (
-                    <tr key={v.id} className="transition hover:bg-slate-50/70">
+                    <tr key={v.id} className="transition hover:bg-surface-2/70">
                       <td className="px-4 py-3.5">
                         <Link to={`/vendors/${v.id}`} className="font-semibold text-brand hover:underline">
                           {v.companyName}
                         </Link>
-                        <div className="text-xs text-slate-400">{poCount} purchase orders</div>
+                        <div className="text-xs text-fg-subtle">{poCount} purchase orders</div>
                       </td>
-                      <td className="px-4 py-3.5 font-mono text-xs text-slate-600">{v.code}</td>
-                      <td className="px-4 py-3.5 font-medium text-slate-700">{v.contactPerson || '—'}</td>
-                      <td className="px-4 py-3.5 text-xs text-slate-600">
+                      <td className="px-4 py-3.5 font-mono text-xs text-fg-soft">{v.code}</td>
+                      <td className="px-4 py-3.5 font-medium text-fg">{v.contactPerson || '—'}</td>
+                      <td className="px-4 py-3.5 text-xs text-fg-soft">
                         <div className="flex items-center gap-1.5">
-                          <Mail size={12} className="text-slate-400" />
+                          <Mail size={12} className="text-fg-subtle" />
                           <span>{v.email}</span>
                         </div>
                         {v.phone ? (
-                          <div className="mt-0.5 flex items-center gap-1.5 text-slate-400">
+                          <div className="mt-0.5 flex items-center gap-1.5 text-fg-subtle">
                             <Phone size={12} />
                             <span>{v.phone}</span>
                           </div>
                         ) : null}
                       </td>
-                      <td className="px-4 py-3.5 font-medium text-slate-700">{v.leadTime} days</td>
-                      <td className="px-4 py-3.5 text-xs text-slate-600">{v.paymentTerms || 'Net 30'}</td>
+                      <td className="px-4 py-3.5 font-medium text-fg">{v.leadTime} days</td>
+                      <td className="px-4 py-3.5 text-xs text-fg-soft">{v.paymentTerms || 'Net 30'}</td>
                       <td className="px-4 py-3.5">
                         <StatusBadge status={v.status} />
                       </td>
@@ -167,7 +167,7 @@ export function VendorsPage() {
                           </Link>
                           <Link
                             to={`/vendors/${v.id}/edit`}
-                            className="rounded px-2 py-1 text-xs font-medium text-slate-600 hover:bg-slate-100"
+                            className="rounded px-2 py-1 text-xs font-medium text-fg-soft hover:bg-surface-2"
                           >
                             Edit
                           </Link>

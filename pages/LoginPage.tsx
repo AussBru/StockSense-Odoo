@@ -39,7 +39,7 @@ export function LoginPage() {
         <Link className="text-brand hover:underline" to="/signup">
           Create an account
         </Link>
-        <Link className="text-slate-500 hover:underline" to="/forgot-password">
+        <Link className="text-fg-muted hover:underline" to="/forgot-password">
           Forgot password?
         </Link>
       </div>

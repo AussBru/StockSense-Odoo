@@ -272,8 +272,8 @@ export function ReportsPage() {
     <div className="space-y-6">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-2xl font-semibold text-ink">Enterprise Reports Suite</h1>
-          <p className="text-sm text-muted">
+          <h1 className="text-2xl font-semibold text-fg">Enterprise Reports Suite</h1>
+          <p className="text-sm text-fg-muted">
             Audit-ready reporting with multi-dimensional filtering, totals summation, and instant CSV export.
           </p>
         </div>
@@ -281,7 +281,7 @@ export function ReportsPage() {
           <button
             type="button"
             onClick={handleExportCsv}
-            className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3.5 py-2 text-sm font-semibold text-slate-700 shadow-sm hover:bg-slate-50"
+            className="inline-flex items-center gap-1.5 rounded-lg border border-line bg-surface px-3.5 py-2 text-sm font-semibold text-fg shadow-sm hover:bg-surface-2"
           >
             <Download size={15} />
             Export CSV
@@ -289,7 +289,7 @@ export function ReportsPage() {
           <button
             type="button"
             onClick={() => window.print()}
-            className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3.5 py-2 text-sm font-semibold text-slate-700 shadow-sm hover:bg-slate-50"
+            className="inline-flex items-center gap-1.5 rounded-lg border border-line bg-surface px-3.5 py-2 text-sm font-semibold text-fg shadow-sm hover:bg-surface-2"
           >
             <Printer size={15} />
             Print Report
@@ -298,7 +298,7 @@ export function ReportsPage() {
       </div>
 
       {/* Report Selection Tabs */}
-      <div className="flex flex-wrap gap-2 rounded-2xl border border-slate-200 bg-white p-2 shadow-sm">
+      <div className="flex flex-wrap gap-2 rounded-2xl border border-line bg-surface p-2 shadow-sm">
         {reportsList.map((r) => {
           const Icon = r.icon
           const isActive = activeReport === r.key
@@ -312,8 +312,8 @@ export function ReportsPage() {
               }}
               className={`flex items-center gap-2 rounded-xl px-3.5 py-2 text-xs font-semibold transition ${
                 isActive
-                  ? 'bg-brand text-white shadow-sm'
-                  : 'bg-transparent text-slate-600 hover:bg-slate-50 hover:text-slate-900'
+                  ? 'bg-brand text-accent-fg shadow-sm'
+                  : 'bg-transparent text-fg-soft hover:bg-surface-2 hover:text-fg'
               }`}
             >
               <Icon size={14} />
@@ -326,7 +326,7 @@ export function ReportsPage() {
       {/* Filter Row */}
       <div className="grid gap-3 sm:grid-cols-2 md:grid-cols-4">
         <div className="relative">
-          <Search className="absolute left-3 top-3 text-slate-400" size={16} />
+          <Search className="absolute left-3 top-3 text-fg-subtle" size={16} />
           <input
             className={`${inputClass} pl-9`}
             placeholder="Search report records..."
@@ -382,12 +382,12 @@ export function ReportsPage() {
       </div>
 
       {/* Report Tables Container */}
-      <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+      <div className="overflow-hidden rounded-2xl border border-line bg-surface shadow-sm">
         <div className="overflow-x-auto">
           {/* 1. PURCHASE ORDER REPORT */}
           {activeReport === 'po' && (
             <table className="w-full text-left text-sm">
-              <thead className="border-b border-slate-100 bg-slate-50 text-xs font-semibold uppercase text-slate-500">
+              <thead className="border-b border-line-soft bg-surface-2 text-xs font-semibold uppercase text-fg-muted">
                 <tr>
                   <th className="px-4 py-3.5">PO Number</th>
                   <th className="px-4 py-3.5">Vendor</th>
@@ -396,29 +396,29 @@ export function ReportsPage() {
                   <th className="px-4 py-3.5">Status</th>
                   <th className="px-4 py-3.5 text-right">Subtotal</th>
                   <th className="px-4 py-3.5 text-right">Tax</th>
-                  <th className="px-4 py-3.5 text-right font-bold text-slate-900">Total</th>
+                  <th className="px-4 py-3.5 text-right font-bold text-fg">Total</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-100">
+              <tbody className="divide-y divide-line-soft">
                 {poData.map((po) => {
                   const v = state.vendors.find((item) => item.id === po.vendorId)
                   return (
-                    <tr key={po.id} className="hover:bg-slate-50/70">
+                    <tr key={po.id} className="hover:bg-surface-2/70">
                       <td className="px-4 py-3.5 font-semibold text-brand">{po.number}</td>
-                      <td className="px-4 py-3.5 font-medium text-slate-800">{v?.companyName || '—'}</td>
-                      <td className="px-4 py-3.5 text-xs text-slate-600">{po.orderDate}</td>
-                      <td className="px-4 py-3.5 text-xs text-slate-600">{po.expectedDeliveryDate}</td>
+                      <td className="px-4 py-3.5 font-medium text-fg">{v?.companyName || '—'}</td>
+                      <td className="px-4 py-3.5 text-xs text-fg-soft">{po.orderDate}</td>
+                      <td className="px-4 py-3.5 text-xs text-fg-soft">{po.expectedDeliveryDate}</td>
                       <td className="px-4 py-3.5">
                         <StatusBadge status={po.status} />
                       </td>
                       <td className="px-4 py-3.5 text-right">${po.subtotal.toFixed(2)}</td>
                       <td className="px-4 py-3.5 text-right">${po.tax.toFixed(2)}</td>
-                      <td className="px-4 py-3.5 text-right font-bold text-slate-900">${po.total.toFixed(2)}</td>
+                      <td className="px-4 py-3.5 text-right font-bold text-fg">${po.total.toFixed(2)}</td>
                     </tr>
                   )
                 })}
               </tbody>
-              <tfoot className="border-t-2 border-slate-200 bg-slate-50/80 font-bold text-slate-800">
+              <tfoot className="border-t-2 border-line bg-surface-2/80 font-bold text-fg">
                 <tr>
                   <td colSpan={5} className="px-4 py-3.5 text-right">
                     Report Totals ({poData.length} Orders):
@@ -440,7 +440,7 @@ export function ReportsPage() {
           {/* 2. SALES ORDER REPORT */}
           {activeReport === 'so' && (
             <table className="w-full text-left text-sm">
-              <thead className="border-b border-slate-100 bg-slate-50 text-xs font-semibold uppercase text-slate-500">
+              <thead className="border-b border-line-soft bg-surface-2 text-xs font-semibold uppercase text-fg-muted">
                 <tr>
                   <th className="px-4 py-3.5">SO Number</th>
                   <th className="px-4 py-3.5">Customer</th>
@@ -449,29 +449,29 @@ export function ReportsPage() {
                   <th className="px-4 py-3.5">Status</th>
                   <th className="px-4 py-3.5 text-right">Subtotal</th>
                   <th className="px-4 py-3.5 text-right">Tax</th>
-                  <th className="px-4 py-3.5 text-right font-bold text-slate-900">Total</th>
+                  <th className="px-4 py-3.5 text-right font-bold text-fg">Total</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-100">
+              <tbody className="divide-y divide-line-soft">
                 {soData.map((so) => {
                   const c = state.customers.find((item) => item.id === so.customerId)
                   return (
-                    <tr key={so.id} className="hover:bg-slate-50/70">
+                    <tr key={so.id} className="hover:bg-surface-2/70">
                       <td className="px-4 py-3.5 font-semibold text-brand">{so.number}</td>
-                      <td className="px-4 py-3.5 font-medium text-slate-800">{c?.name || '—'}</td>
-                      <td className="px-4 py-3.5 text-xs text-slate-600">{so.orderDate}</td>
-                      <td className="px-4 py-3.5 text-xs text-slate-600">{so.deliveryDate}</td>
+                      <td className="px-4 py-3.5 font-medium text-fg">{c?.name || '—'}</td>
+                      <td className="px-4 py-3.5 text-xs text-fg-soft">{so.orderDate}</td>
+                      <td className="px-4 py-3.5 text-xs text-fg-soft">{so.deliveryDate}</td>
                       <td className="px-4 py-3.5">
                         <StatusBadge status={so.status} />
                       </td>
                       <td className="px-4 py-3.5 text-right">${so.subtotal.toFixed(2)}</td>
                       <td className="px-4 py-3.5 text-right">${so.tax.toFixed(2)}</td>
-                      <td className="px-4 py-3.5 text-right font-bold text-slate-900">${so.total.toFixed(2)}</td>
+                      <td className="px-4 py-3.5 text-right font-bold text-fg">${so.total.toFixed(2)}</td>
                     </tr>
                   )
                 })}
               </tbody>
-              <tfoot className="border-t-2 border-slate-200 bg-slate-50/80 font-bold text-slate-800">
+              <tfoot className="border-t-2 border-line bg-surface-2/80 font-bold text-fg">
                 <tr>
                   <td colSpan={5} className="px-4 py-3.5 text-right">
                     Report Totals ({soData.length} Orders):
@@ -493,7 +493,7 @@ export function ReportsPage() {
           {/* 3. VENDOR REPORT */}
           {activeReport === 'vendor' && (
             <table className="w-full text-left text-sm">
-              <thead className="border-b border-slate-100 bg-slate-50 text-xs font-semibold uppercase text-slate-500">
+              <thead className="border-b border-line-soft bg-surface-2 text-xs font-semibold uppercase text-fg-muted">
                 <tr>
                   <th className="px-4 py-3.5">Vendor Name</th>
                   <th className="px-4 py-3.5">Code</th>
@@ -502,23 +502,23 @@ export function ReportsPage() {
                   <th className="px-4 py-3.5">Lead Time</th>
                   <th className="px-4 py-3.5">Payment Terms</th>
                   <th className="px-4 py-3.5">Total POs</th>
-                  <th className="px-4 py-3.5 text-right font-bold text-slate-900">Total Spend</th>
+                  <th className="px-4 py-3.5 text-right font-bold text-fg">Total Spend</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-100">
+              <tbody className="divide-y divide-line-soft">
                 {vendorData.map((v) => {
                   const pos = state.purchaseOrders.filter((p) => p.vendorId === v.id)
                   const spend = pos
                     .filter((p) => p.status === 'received' || p.status === 'partial')
                     .reduce((sum, p) => sum + p.total, 0)
                   return (
-                    <tr key={v.id} className="hover:bg-slate-50/70">
-                      <td className="px-4 py-3.5 font-semibold text-slate-800">{v.companyName}</td>
-                      <td className="px-4 py-3.5 font-mono text-xs text-slate-600">{v.code}</td>
-                      <td className="px-4 py-3.5 text-slate-700">{v.contactPerson || '—'}</td>
-                      <td className="px-4 py-3.5 text-xs text-slate-600">{v.email}</td>
+                    <tr key={v.id} className="hover:bg-surface-2/70">
+                      <td className="px-4 py-3.5 font-semibold text-fg">{v.companyName}</td>
+                      <td className="px-4 py-3.5 font-mono text-xs text-fg-soft">{v.code}</td>
+                      <td className="px-4 py-3.5 text-fg">{v.contactPerson || '—'}</td>
+                      <td className="px-4 py-3.5 text-xs text-fg-soft">{v.email}</td>
                       <td className="px-4 py-3.5 font-medium">{v.leadTime} days</td>
-                      <td className="px-4 py-3.5 text-xs text-slate-600">{v.paymentTerms}</td>
+                      <td className="px-4 py-3.5 text-xs text-fg-soft">{v.paymentTerms}</td>
                       <td className="px-4 py-3.5 font-medium">{pos.length}</td>
                       <td className="px-4 py-3.5 text-right font-bold text-emerald-700">${spend.toLocaleString()}</td>
                     </tr>
@@ -531,28 +531,28 @@ export function ReportsPage() {
           {/* 4. CUSTOMER REPORT */}
           {activeReport === 'customer' && (
             <table className="w-full text-left text-sm">
-              <thead className="border-b border-slate-100 bg-slate-50 text-xs font-semibold uppercase text-slate-500">
+              <thead className="border-b border-line-soft bg-surface-2 text-xs font-semibold uppercase text-fg-muted">
                 <tr>
                   <th className="px-4 py-3.5">Customer Name</th>
                   <th className="px-4 py-3.5">Code</th>
                   <th className="px-4 py-3.5">Email</th>
                   <th className="px-4 py-3.5">Phone</th>
                   <th className="px-4 py-3.5">Total Sales Orders</th>
-                  <th className="px-4 py-3.5 text-right font-bold text-slate-900">Revenue Generated</th>
+                  <th className="px-4 py-3.5 text-right font-bold text-fg">Revenue Generated</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-100">
+              <tbody className="divide-y divide-line-soft">
                 {customerData.map((c) => {
                   const orders = state.salesOrders.filter((s) => s.customerId === c.id)
                   const revenue = orders
                     .filter((s) => s.status === 'shipped' || s.status === 'delivered')
                     .reduce((sum, s) => sum + s.total, 0)
                   return (
-                    <tr key={c.id} className="hover:bg-slate-50/70">
-                      <td className="px-4 py-3.5 font-semibold text-slate-800">{c.name}</td>
-                      <td className="px-4 py-3.5 font-mono text-xs text-slate-600">{c.code}</td>
-                      <td className="px-4 py-3.5 text-xs text-slate-600">{c.email}</td>
-                      <td className="px-4 py-3.5 text-xs text-slate-600">{c.phone || '—'}</td>
+                    <tr key={c.id} className="hover:bg-surface-2/70">
+                      <td className="px-4 py-3.5 font-semibold text-fg">{c.name}</td>
+                      <td className="px-4 py-3.5 font-mono text-xs text-fg-soft">{c.code}</td>
+                      <td className="px-4 py-3.5 text-xs text-fg-soft">{c.email}</td>
+                      <td className="px-4 py-3.5 text-xs text-fg-soft">{c.phone || '—'}</td>
                       <td className="px-4 py-3.5 font-medium">{orders.length}</td>
                       <td className="px-4 py-3.5 text-right font-bold text-emerald-700">${revenue.toLocaleString()}</td>
                     </tr>
@@ -565,29 +565,29 @@ export function ReportsPage() {
           {/* 5. INVENTORY VALUATION REPORT */}
           {activeReport === 'valuation' && (
             <table className="w-full text-left text-sm">
-              <thead className="border-b border-slate-100 bg-slate-50 text-xs font-semibold uppercase text-slate-500">
+              <thead className="border-b border-line-soft bg-surface-2 text-xs font-semibold uppercase text-fg-muted">
                 <tr>
                   <th className="px-4 py-3.5">Product</th>
                   <th className="px-4 py-3.5">SKU</th>
                   <th className="px-4 py-3.5">Category</th>
                   <th className="px-4 py-3.5 text-right">Physical Units On Hand</th>
                   <th className="px-4 py-3.5 text-right">WAC Cost</th>
-                  <th className="px-4 py-3.5 text-right font-bold text-slate-900">Total Asset Value</th>
+                  <th className="px-4 py-3.5 text-right font-bold text-fg">Total Asset Value</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-100">
+              <tbody className="divide-y divide-line-soft">
                 {valuationData.map((r) => (
-                  <tr key={r.product.id} className="hover:bg-slate-50/70">
-                    <td className="px-4 py-3.5 font-semibold text-slate-800">{r.product.name}</td>
-                    <td className="px-4 py-3.5 font-mono text-xs text-slate-500">{r.product.sku}</td>
-                    <td className="px-4 py-3.5 text-xs text-slate-600">{r.category}</td>
+                  <tr key={r.product.id} className="hover:bg-surface-2/70">
+                    <td className="px-4 py-3.5 font-semibold text-fg">{r.product.name}</td>
+                    <td className="px-4 py-3.5 font-mono text-xs text-fg-muted">{r.product.sku}</td>
+                    <td className="px-4 py-3.5 text-xs text-fg-soft">{r.category}</td>
                     <td className="px-4 py-3.5 text-right font-medium">{r.onHand}</td>
-                    <td className="px-4 py-3.5 text-right text-slate-700">${r.unitCost.toFixed(2)}</td>
+                    <td className="px-4 py-3.5 text-right text-fg">${r.unitCost.toFixed(2)}</td>
                     <td className="px-4 py-3.5 text-right font-bold text-emerald-700">${r.total.toFixed(2)}</td>
                   </tr>
                 ))}
               </tbody>
-              <tfoot className="border-t-2 border-slate-200 bg-slate-50/80 font-bold text-slate-800">
+              <tfoot className="border-t-2 border-line bg-surface-2/80 font-bold text-fg">
                 <tr>
                   <td colSpan={3} className="px-4 py-3.5 text-right">
                     Total Valuation Across All SKUs:
@@ -607,7 +607,7 @@ export function ReportsPage() {
           {/* 6. DEAD STOCK REPORT */}
           {activeReport === 'dead' && (
             <table className="w-full text-left text-sm">
-              <thead className="border-b border-slate-100 bg-slate-50 text-xs font-semibold uppercase text-slate-500">
+              <thead className="border-b border-line-soft bg-surface-2 text-xs font-semibold uppercase text-fg-muted">
                 <tr>
                   <th className="px-4 py-3.5">Product Name</th>
                   <th className="px-4 py-3.5">SKU</th>
@@ -616,23 +616,23 @@ export function ReportsPage() {
                   <th className="px-4 py-3.5 text-right font-bold text-rose-600">Trapped Capital ($)</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-100">
+              <tbody className="divide-y divide-line-soft">
                 {deadStockData.map((p) => {
                   const onHand = totalOnHand(state, p.id)
                   const cost = getProductUnitCost(p)
                   const total = onHand * cost
                   return (
-                    <tr key={p.id} className="hover:bg-slate-50/70">
-                      <td className="px-4 py-3.5 font-semibold text-slate-800">{p.name}</td>
-                      <td className="px-4 py-3.5 font-mono text-xs text-slate-500">{p.sku}</td>
+                    <tr key={p.id} className="hover:bg-surface-2/70">
+                      <td className="px-4 py-3.5 font-semibold text-fg">{p.name}</td>
+                      <td className="px-4 py-3.5 font-mono text-xs text-fg-muted">{p.sku}</td>
                       <td className="px-4 py-3.5 text-right font-medium">{onHand}</td>
-                      <td className="px-4 py-3.5 text-right text-slate-700">${cost.toFixed(2)}</td>
+                      <td className="px-4 py-3.5 text-right text-fg">${cost.toFixed(2)}</td>
                       <td className="px-4 py-3.5 text-right font-bold text-rose-600">${total.toFixed(2)}</td>
                     </tr>
                   )
                 })}
               </tbody>
-              <tfoot className="border-t-2 border-slate-200 bg-slate-50/80 font-bold text-slate-800">
+              <tfoot className="border-t-2 border-line bg-surface-2/80 font-bold text-fg">
                 <tr>
                   <td colSpan={2} className="px-4 py-3.5 text-right">
                     Total Dead Stock Capital Trapped:
@@ -652,7 +652,7 @@ export function ReportsPage() {
           {/* 7. STOCK MOVEMENT REPORT */}
           {activeReport === 'movement' && (
             <table className="w-full text-left text-sm">
-              <thead className="border-b border-slate-100 bg-slate-50 text-xs font-semibold uppercase text-slate-500">
+              <thead className="border-b border-line-soft bg-surface-2 text-xs font-semibold uppercase text-fg-muted">
                 <tr>
                   <th className="px-4 py-3.5">Timestamp</th>
                   <th className="px-4 py-3.5">Document #</th>
@@ -662,25 +662,25 @@ export function ReportsPage() {
                   <th className="px-4 py-3.5">Movement Description</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-100">
+              <tbody className="divide-y divide-line-soft">
                 {movementData.map((e) => {
                   const p = state.products.find((prod) => prod.id === e.productId)
                   return (
-                    <tr key={e.id} className="hover:bg-slate-50/70">
-                      <td className="px-4 py-3.5 text-xs text-slate-600">{new Date(e.date).toLocaleString()}</td>
+                    <tr key={e.id} className="hover:bg-surface-2/70">
+                      <td className="px-4 py-3.5 text-xs text-fg-soft">{new Date(e.date).toLocaleString()}</td>
                       <td className="px-4 py-3.5 font-mono text-xs font-semibold text-brand">
                         {e.documentNumber || '—'}
                       </td>
                       <td className="px-4 py-3.5">
-                        <span className="rounded-full bg-slate-100 px-2 py-0.5 text-xs font-semibold uppercase text-slate-700">
+                        <span className="rounded-full bg-surface-2 px-2 py-0.5 text-xs font-semibold uppercase text-fg">
                           {e.type}
                         </span>
                       </td>
-                      <td className="px-4 py-3.5 font-medium text-slate-800">
-                        {p?.name || 'Product'} <span className="font-mono text-xs text-slate-400">({p?.sku})</span>
+                      <td className="px-4 py-3.5 font-medium text-fg">
+                        {p?.name || 'Product'} <span className="font-mono text-xs text-fg-subtle">({p?.sku})</span>
                       </td>
-                      <td className="px-4 py-3.5 text-right font-bold text-slate-900">{e.qty}</td>
-                      <td className="px-4 py-3.5 text-xs text-slate-600">{e.note || '—'}</td>
+                      <td className="px-4 py-3.5 text-right font-bold text-fg">{e.qty}</td>
+                      <td className="px-4 py-3.5 text-xs text-fg-soft">{e.note || '—'}</td>
                     </tr>
                   )
                 })}
@@ -691,7 +691,7 @@ export function ReportsPage() {
           {/* 8. REORDER REPORT */}
           {activeReport === 'reorder' && (
             <table className="w-full text-left text-sm">
-              <thead className="border-b border-slate-100 bg-slate-50 text-xs font-semibold uppercase text-slate-500">
+              <thead className="border-b border-line-soft bg-surface-2 text-xs font-semibold uppercase text-fg-muted">
                 <tr>
                   <th className="px-4 py-3.5">Product</th>
                   <th className="px-4 py-3.5">SKU</th>
@@ -699,25 +699,25 @@ export function ReportsPage() {
                   <th className="px-4 py-3.5 text-right">Min Buffer</th>
                   <th className="px-4 py-3.5 text-right font-bold text-brand">Suggested Order</th>
                   <th className="px-4 py-3.5">Primary Supplier</th>
-                  <th className="px-4 py-3.5 text-right font-bold text-slate-900">Estimated Cost</th>
+                  <th className="px-4 py-3.5 text-right font-bold text-fg">Estimated Cost</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-100">
+              <tbody className="divide-y divide-line-soft">
                 {reorderData.map((r) => (
-                  <tr key={r.product.id} className="hover:bg-slate-50/70">
-                    <td className="px-4 py-3.5 font-semibold text-slate-800">{r.product.name}</td>
-                    <td className="px-4 py-3.5 font-mono text-xs text-slate-500">{r.product.sku}</td>
+                  <tr key={r.product.id} className="hover:bg-surface-2/70">
+                    <td className="px-4 py-3.5 font-semibold text-fg">{r.product.name}</td>
+                    <td className="px-4 py-3.5 font-mono text-xs text-fg-muted">{r.product.sku}</td>
                     <td className="px-4 py-3.5 text-right font-bold text-rose-600">{r.available}</td>
-                    <td className="px-4 py-3.5 text-right font-medium text-slate-600">{r.minQty}</td>
+                    <td className="px-4 py-3.5 text-right font-medium text-fg-soft">{r.minQty}</td>
                     <td className="px-4 py-3.5 text-right font-bold text-brand">
                       +{r.suggestedQty} {r.product.uom}
                     </td>
-                    <td className="px-4 py-3.5 text-xs text-slate-700">{r.primaryVendor?.companyName || '—'}</td>
-                    <td className="px-4 py-3.5 text-right font-bold text-slate-900">${r.estimatedCost.toFixed(2)}</td>
+                    <td className="px-4 py-3.5 text-xs text-fg">{r.primaryVendor?.companyName || '—'}</td>
+                    <td className="px-4 py-3.5 text-right font-bold text-fg">${r.estimatedCost.toFixed(2)}</td>
                   </tr>
                 ))}
               </tbody>
-              <tfoot className="border-t-2 border-slate-200 bg-slate-50/80 font-bold text-slate-800">
+              <tfoot className="border-t-2 border-line bg-surface-2/80 font-bold text-fg">
                 <tr>
                   <td colSpan={4} className="px-4 py-3.5 text-right">
                     Total Estimated Procurement Cost:

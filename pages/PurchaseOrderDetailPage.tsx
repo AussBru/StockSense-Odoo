@@ -28,9 +28,9 @@ export function PurchaseOrderDetailPage() {
 
   if (!po) {
     return (
-      <div className="rounded-2xl border border-slate-200 bg-white p-8 text-center shadow-sm">
-        <h2 className="text-lg font-semibold text-ink">Purchase Order not found</h2>
-        <p className="mt-1 text-sm text-muted">The requested PO could not be located.</p>
+      <div className="rounded-2xl border border-line bg-surface p-8 text-center shadow-sm">
+        <h2 className="text-lg font-semibold text-fg">Purchase Order not found</h2>
+        <p className="mt-1 text-sm text-fg-muted">The requested PO could not be located.</p>
         <Link to="/purchase-orders" className="mt-4 inline-block text-sm font-semibold text-brand hover:underline">
           Back to Purchase Orders
         </Link>
@@ -118,16 +118,16 @@ export function PurchaseOrderDetailPage() {
           <button
             type="button"
             onClick={() => navigate('/purchase-orders')}
-            className="flex h-9 w-9 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-500 hover:bg-slate-50"
+            className="flex h-9 w-9 items-center justify-center rounded-lg border border-line bg-surface text-fg-muted hover:bg-surface-2"
           >
             <ArrowLeft size={16} />
           </button>
           <div>
             <div className="flex items-center gap-2">
-              <h1 className="text-2xl font-bold text-ink">{po.number}</h1>
+              <h1 className="text-2xl font-bold text-fg">{po.number}</h1>
               <StatusBadge status={po.status} />
             </div>
-            <div className="text-xs text-slate-400">Created: {new Date(po.createdAt).toLocaleString()}</div>
+            <div className="text-xs text-fg-subtle">Created: {new Date(po.createdAt).toLocaleString()}</div>
           </div>
         </div>
 
@@ -137,14 +137,14 @@ export function PurchaseOrderDetailPage() {
               <button
                 type="button"
                 onClick={handleSend}
-                className="inline-flex items-center gap-1.5 rounded-lg bg-brand px-3.5 py-2 text-sm font-semibold text-white shadow-sm hover:bg-brand-dark"
+                className="inline-flex items-center gap-1.5 rounded-lg bg-brand px-3.5 py-2 text-sm font-semibold text-accent-fg shadow-sm hover:bg-brand-dark"
               >
                 <Send size={15} />
                 Send to Vendor
               </button>
               <Link
                 to={`/purchase-orders/${po.id}/edit`}
-                className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3.5 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50"
+                className="inline-flex items-center gap-1.5 rounded-lg border border-line bg-surface px-3.5 py-2 text-sm font-semibold text-fg hover:bg-surface-2"
               >
                 <Edit size={15} />
                 Edit
@@ -166,7 +166,7 @@ export function PurchaseOrderDetailPage() {
           <button
             type="button"
             onClick={handleDuplicate}
-            className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50"
+            className="inline-flex items-center gap-1.5 rounded-lg border border-line bg-surface px-3 py-2 text-sm font-semibold text-fg hover:bg-surface-2"
           >
             <Copy size={15} />
             Duplicate
@@ -175,7 +175,7 @@ export function PurchaseOrderDetailPage() {
           <button
             type="button"
             onClick={() => window.print()}
-            className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50"
+            className="inline-flex items-center gap-1.5 rounded-lg border border-line bg-surface px-3 py-2 text-sm font-semibold text-fg hover:bg-surface-2"
           >
             <Printer size={15} />
             Print
@@ -185,7 +185,7 @@ export function PurchaseOrderDetailPage() {
             <button
               type="button"
               onClick={handleCancel}
-              className="inline-flex items-center gap-1.5 rounded-lg border border-rose-200 bg-white px-3 py-2 text-sm font-semibold text-rose-600 hover:bg-rose-50"
+              className="inline-flex items-center gap-1.5 rounded-lg border border-rose-200 bg-surface px-3 py-2 text-sm font-semibold text-rose-600 hover:bg-rose-50"
             >
               <XCircle size={15} />
               Cancel
@@ -203,8 +203,8 @@ export function PurchaseOrderDetailPage() {
       ) : null}
 
       {/* Lifecycle Progress Bar */}
-      <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-        <div className="text-xs font-semibold uppercase tracking-wider text-muted">Order Lifecycle</div>
+      <div className="rounded-2xl border border-line bg-surface p-5 shadow-sm">
+        <div className="text-xs font-semibold uppercase tracking-wider text-fg-muted">Order Lifecycle</div>
         {po.status === 'canceled' ? (
           <div className="mt-3 flex items-center gap-2 rounded-lg bg-rose-50 p-3 text-sm font-medium text-rose-700">
             <XCircle size={16} />
@@ -222,8 +222,8 @@ export function PurchaseOrderDetailPage() {
                     isCurrent
                       ? 'border-brand bg-brand/10 text-brand'
                       : isDone
-                      ? 'border-emerald-200 bg-emerald-50 text-emerald-800'
-                      : 'border-slate-100 bg-slate-50 text-slate-400'
+                      ? 'border-emerald-200 bg-$1-50 text-$1-800 dark:bg-$1-500/15 dark:text-$1-300'
+                      : 'border-line-soft bg-surface-2 text-fg-subtle'
                   }`}
                 >
                   <div className="flex items-center gap-1.5">
@@ -239,12 +239,12 @@ export function PurchaseOrderDetailPage() {
 
       {/* Header Cards */}
       <div className="grid gap-6 md:grid-cols-3">
-        <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-          <h2 className="text-xs font-semibold uppercase tracking-wider text-muted">Vendor Details</h2>
-          <div className="mt-2 text-base font-bold text-ink">{vendor?.companyName || 'Unknown'}</div>
-          <div className="mt-1 text-xs text-slate-500">Contact: {vendor?.contactPerson || '—'}</div>
-          <div className="mt-0.5 text-xs text-slate-500">Email: {vendor?.email || '—'}</div>
-          <div className="mt-0.5 text-xs text-slate-500">Phone: {vendor?.phone || '—'}</div>
+        <div className="rounded-2xl border border-line bg-surface p-5 shadow-sm">
+          <h2 className="text-xs font-semibold uppercase tracking-wider text-fg-muted">Vendor Details</h2>
+          <div className="mt-2 text-base font-bold text-fg">{vendor?.companyName || 'Unknown'}</div>
+          <div className="mt-1 text-xs text-fg-muted">Contact: {vendor?.contactPerson || '—'}</div>
+          <div className="mt-0.5 text-xs text-fg-muted">Email: {vendor?.email || '—'}</div>
+          <div className="mt-0.5 text-xs text-fg-muted">Phone: {vendor?.phone || '—'}</div>
           {vendor ? (
             <Link to={`/vendors/${vendor.id}`} className="mt-2 inline-block text-xs font-semibold text-brand hover:underline">
               View vendor profile →
@@ -252,30 +252,30 @@ export function PurchaseOrderDetailPage() {
           ) : null}
         </div>
 
-        <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-          <h2 className="text-xs font-semibold uppercase tracking-wider text-muted">Destination Warehouse</h2>
-          <div className="mt-2 text-base font-bold text-ink">{warehouse?.name || 'Main Warehouse'}</div>
-          <div className="mt-1 text-xs text-slate-500">Code: {warehouse?.code || 'WH1'}</div>
-          <div className="mt-0.5 text-xs text-slate-500">Address: {warehouse?.address || '—'}</div>
+        <div className="rounded-2xl border border-line bg-surface p-5 shadow-sm">
+          <h2 className="text-xs font-semibold uppercase tracking-wider text-fg-muted">Destination Warehouse</h2>
+          <div className="mt-2 text-base font-bold text-fg">{warehouse?.name || 'Main Warehouse'}</div>
+          <div className="mt-1 text-xs text-fg-muted">Code: {warehouse?.code || 'WH1'}</div>
+          <div className="mt-0.5 text-xs text-fg-muted">Address: {warehouse?.address || '—'}</div>
         </div>
 
-        <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-          <h2 className="text-xs font-semibold uppercase tracking-wider text-muted">Order Schedule</h2>
+        <div className="rounded-2xl border border-line bg-surface p-5 shadow-sm">
+          <h2 className="text-xs font-semibold uppercase tracking-wider text-fg-muted">Order Schedule</h2>
           <div className="mt-2 flex justify-between text-xs">
-            <span className="text-slate-500">Order Date:</span>
-            <span className="font-semibold text-slate-800">{po.orderDate}</span>
+            <span className="text-fg-muted">Order Date:</span>
+            <span className="font-semibold text-fg">{po.orderDate}</span>
           </div>
           <div className="mt-1.5 flex justify-between text-xs">
-            <span className="text-slate-500">Expected Delivery:</span>
+            <span className="text-fg-muted">Expected Delivery:</span>
             <span className="font-semibold text-indigo-700">{po.expectedDeliveryDate}</span>
           </div>
           <div className="mt-1.5 flex justify-between text-xs">
-            <span className="text-slate-500">Payment Terms:</span>
-            <span className="font-semibold text-slate-800">{vendor?.paymentTerms || 'Net 30'}</span>
+            <span className="text-fg-muted">Payment Terms:</span>
+            <span className="font-semibold text-fg">{vendor?.paymentTerms || 'Net 30'}</span>
           </div>
           <div className="mt-1.5 flex justify-between text-xs">
-            <span className="text-slate-500">Over-Receipt:</span>
-            <span className="font-semibold text-slate-800">
+            <span className="text-fg-muted">Over-Receipt:</span>
+            <span className="font-semibold text-fg">
               {po.allowOverReceipt ? 'Allowed' : 'Strict (Blocked)'}
             </span>
           </div>
@@ -283,15 +283,15 @@ export function PurchaseOrderDetailPage() {
       </div>
 
       {/* Product Lines Table */}
-      <div className="space-y-4 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+      <div className="space-y-4 rounded-2xl border border-line bg-surface p-5 shadow-sm">
         <div className="flex items-center justify-between">
-          <h2 className="font-semibold text-ink">Ordered Products & Line Items</h2>
-          <span className="text-xs text-slate-400">{po.lines.length} SKU line items</span>
+          <h2 className="font-semibold text-fg">Ordered Products & Line Items</h2>
+          <span className="text-xs text-fg-subtle">{po.lines.length} SKU line items</span>
         </div>
 
         <div className="overflow-x-auto">
           <table className="w-full text-left text-sm">
-            <thead className="border-b border-slate-100 bg-slate-50 text-xs font-semibold uppercase text-slate-500">
+            <thead className="border-b border-line-soft bg-surface-2 text-xs font-semibold uppercase text-fg-muted">
               <tr>
                 <th className="px-4 py-3">Product</th>
                 <th className="px-4 py-3">SKU</th>
@@ -303,13 +303,13 @@ export function PurchaseOrderDetailPage() {
                 <th className="px-4 py-3 text-right">Total</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-100">
+            <tbody className="divide-y divide-line-soft">
               {po.lines.map((line) => {
                 const prod = state.products.find((p) => p.id === line.productId)
                 const remaining = Math.max(0, line.orderedQty - line.receivedQty)
                 return (
-                  <tr key={line.id} className="hover:bg-slate-50/50">
-                    <td className="px-4 py-3 font-medium text-slate-800">
+                  <tr key={line.id} className="hover:bg-surface-2/50">
+                    <td className="px-4 py-3 font-medium text-fg">
                       {prod ? (
                         <Link to={`/products/${prod.id}`} className="hover:underline">
                           {prod.name}
@@ -318,13 +318,13 @@ export function PurchaseOrderDetailPage() {
                         'Custom Product'
                       )}
                     </td>
-                    <td className="px-4 py-3 font-mono text-xs text-slate-500">{prod?.sku || '—'}</td>
+                    <td className="px-4 py-3 font-mono text-xs text-fg-muted">{prod?.sku || '—'}</td>
                     <td className="px-4 py-3 text-right font-medium">{line.orderedQty}</td>
                     <td className="px-4 py-3 text-right font-semibold text-emerald-700">{line.receivedQty}</td>
                     <td className="px-4 py-3 text-right font-medium text-amber-600">{remaining}</td>
-                    <td className="px-4 py-3 text-right text-slate-700">${line.unitCost.toFixed(2)}</td>
-                    <td className="px-4 py-3 text-right text-slate-500">{line.taxRate}%</td>
-                    <td className="px-4 py-3 text-right font-semibold text-slate-900">${line.total.toFixed(2)}</td>
+                    <td className="px-4 py-3 text-right text-fg">${line.unitCost.toFixed(2)}</td>
+                    <td className="px-4 py-3 text-right text-fg-muted">{line.taxRate}%</td>
+                    <td className="px-4 py-3 text-right font-semibold text-fg">${line.total.toFixed(2)}</td>
                   </tr>
                 )
               })}
@@ -333,24 +333,24 @@ export function PurchaseOrderDetailPage() {
         </div>
 
         {/* Totals Summary */}
-        <div className="flex flex-col items-end gap-1.5 border-t border-slate-100 pt-4 text-sm">
-          <div className="flex w-64 justify-between text-slate-600">
+        <div className="flex flex-col items-end gap-1.5 border-t border-line-soft pt-4 text-sm">
+          <div className="flex w-64 justify-between text-fg-soft">
             <span>Subtotal:</span>
-            <span className="font-semibold text-slate-800">${po.subtotal.toFixed(2)}</span>
+            <span className="font-semibold text-fg">${po.subtotal.toFixed(2)}</span>
           </div>
-          <div className="flex w-64 justify-between text-slate-600">
+          <div className="flex w-64 justify-between text-fg-soft">
             <span>Estimated Tax:</span>
-            <span className="font-semibold text-slate-800">${po.tax.toFixed(2)}</span>
+            <span className="font-semibold text-fg">${po.tax.toFixed(2)}</span>
           </div>
-          <div className="flex w-64 justify-between border-t border-slate-200 pt-1.5 text-base font-bold text-ink">
+          <div className="flex w-64 justify-between border-t border-line pt-1.5 text-base font-bold text-fg">
             <span>Grand Total:</span>
             <span className="text-emerald-700">${po.total.toFixed(2)}</span>
           </div>
         </div>
 
         {po.notes ? (
-          <div className="border-t border-slate-100 pt-3 text-xs text-slate-500">
-            <span className="font-semibold text-slate-700">Order Notes: </span>
+          <div className="border-t border-line-soft pt-3 text-xs text-fg-muted">
+            <span className="font-semibold text-fg">Order Notes: </span>
             {po.notes}
           </div>
         ) : null}
@@ -358,8 +358,8 @@ export function PurchaseOrderDetailPage() {
 
       {/* Linked Inbound Stock Documents */}
       {po.receivedDocIds && po.receivedDocIds.length > 0 ? (
-        <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-          <h2 className="mb-3 font-semibold text-ink">Linked Inbound Receipts (WH/IN)</h2>
+        <div className="rounded-2xl border border-line bg-surface p-5 shadow-sm">
+          <h2 className="mb-3 font-semibold text-fg">Linked Inbound Receipts (WH/IN)</h2>
           <div className="flex flex-wrap gap-2">
             {po.receivedDocIds.map((docId) => {
               const doc = state.documents.find((d) => d.id === docId)
@@ -367,7 +367,7 @@ export function PurchaseOrderDetailPage() {
                 <Link
                   key={docId}
                   to={`/receipts/${docId}`}
-                  className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-slate-50 px-3 py-1.5 text-xs font-semibold text-brand hover:bg-slate-100"
+                  className="inline-flex items-center gap-1.5 rounded-lg border border-line bg-surface-2 px-3 py-1.5 text-xs font-semibold text-brand hover:bg-surface-2"
                 >
                   <PackageCheck size={14} />
                   <span>{doc?.number || docId}</span>
@@ -381,22 +381,22 @@ export function PurchaseOrderDetailPage() {
       {/* Receive Goods Modal */}
       {receiveModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4 backdrop-blur-sm">
-          <div className="w-full max-w-xl rounded-2xl border border-slate-200 bg-white p-6 shadow-xl">
-            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+          <div className="w-full max-w-xl rounded-2xl border border-line bg-surface p-6 shadow-xl">
+            <div className="flex items-center justify-between border-b border-line-soft pb-3">
               <div className="flex items-center gap-2">
                 <PackageCheck className="text-emerald-600" size={20} />
-                <h3 className="text-lg font-bold text-ink">Receive Goods for {po.number}</h3>
+                <h3 className="text-lg font-bold text-fg">Receive Goods for {po.number}</h3>
               </div>
               <button
                 type="button"
                 onClick={() => setReceiveModalOpen(false)}
-                className="text-slate-400 hover:text-slate-600"
+                className="text-fg-subtle hover:text-fg-soft"
               >
                 <X size={18} />
               </button>
             </div>
 
-            <p className="mt-3 text-xs text-muted">
+            <p className="mt-3 text-xs text-fg-muted">
               Specify the quantities received in this shipment. Destination warehouse stock and ledger
               entries will be updated automatically.
             </p>
@@ -406,10 +406,10 @@ export function PurchaseOrderDetailPage() {
                 const prod = state.products.find((p) => p.id === line.productId)
                 const remaining = Math.max(0, line.orderedQty - line.receivedQty)
                 return (
-                  <div key={line.id} className="flex items-center justify-between rounded-xl border border-slate-200 p-3">
+                  <div key={line.id} className="flex items-center justify-between rounded-xl border border-line p-3">
                     <div>
-                      <div className="font-semibold text-slate-800">{prod?.name || 'Product'}</div>
-                      <div className="font-mono text-xs text-slate-500">
+                      <div className="font-semibold text-fg">{prod?.name || 'Product'}</div>
+                      <div className="font-mono text-xs text-fg-muted">
                         SKU: {prod?.sku || '—'} · Ordered: {line.orderedQty} · Recv: {line.receivedQty} · Rem:{' '}
                         {remaining}
                       </div>
@@ -431,22 +431,22 @@ export function PurchaseOrderDetailPage() {
               })}
             </div>
 
-            <div className="mt-4 flex items-center gap-2 text-xs text-slate-600">
+            <div className="mt-4 flex items-center gap-2 text-xs text-fg-soft">
               <input
                 type="checkbox"
                 id="allowOverReceipt"
                 checked={allowOverReceipt}
                 onChange={(e) => setAllowOverReceipt(e.target.checked)}
-                className="rounded border-slate-300 text-brand"
+                className="rounded border-line text-brand"
               />
               <label htmlFor="allowOverReceipt">Allow receiving more than ordered quantity</label>
             </div>
 
-            <div className="mt-6 flex items-center justify-end gap-3 border-t border-slate-100 pt-4">
+            <div className="mt-6 flex items-center justify-end gap-3 border-t border-line-soft pt-4">
               <button
                 type="button"
                 onClick={() => setReceiveModalOpen(false)}
-                className="rounded-lg border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-600 hover:bg-slate-50"
+                className="rounded-lg border border-line px-4 py-2 text-sm font-semibold text-fg-soft hover:bg-surface-2"
               >
                 Cancel
               </button>

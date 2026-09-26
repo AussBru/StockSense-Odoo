@@ -151,15 +151,15 @@ export function PurchaseOrderFormPage() {
         <button
           type="button"
           onClick={() => navigate(-1)}
-          className="flex h-9 w-9 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-500 hover:bg-slate-50"
+          className="flex h-9 w-9 items-center justify-center rounded-lg border border-line bg-surface text-fg-muted hover:bg-surface-2"
         >
           <ArrowLeft size={16} />
         </button>
         <div>
-          <h1 className="text-2xl font-bold text-ink">
+          <h1 className="text-2xl font-bold text-fg">
             {existing ? `Edit Purchase Order ${existing.number}` : 'New Purchase Order'}
           </h1>
-          <p className="text-sm text-muted">Create a formal procurement order for suppliers.</p>
+          <p className="text-sm text-fg-muted">Create a formal procurement order for suppliers.</p>
         </div>
       </div>
 
@@ -167,8 +167,8 @@ export function PurchaseOrderFormPage() {
         {error ? <div className="rounded-lg bg-rose-50 p-3.5 text-sm font-medium text-rose-700">{error}</div> : null}
 
         {/* PO Header Information */}
-        <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-          <h2 className="mb-4 font-semibold text-ink">Supplier & Destination</h2>
+        <div className="rounded-2xl border border-line bg-surface p-6 shadow-sm">
+          <h2 className="mb-4 font-semibold text-fg">Supplier & Destination</h2>
           <div className="grid gap-4 sm:grid-cols-2">
             <div>
               <Field label="Vendor / Supplier *">
@@ -182,7 +182,7 @@ export function PurchaseOrderFormPage() {
                 </select>
               </Field>
               {selectedVendor ? (
-                <div className="mt-1 text-xs text-slate-500">
+                <div className="mt-1 text-xs text-fg-muted">
                   Contact: {selectedVendor.contactPerson || '—'} · Terms: {selectedVendor.paymentTerms || 'Net 30'}
                 </div>
               ) : null}
@@ -228,12 +228,12 @@ export function PurchaseOrderFormPage() {
             </Field>
 
             <div className="flex items-center pt-6">
-              <label className="flex cursor-pointer items-center gap-2 text-sm text-slate-700">
+              <label className="flex cursor-pointer items-center gap-2 text-sm text-fg">
                 <input
                   type="checkbox"
                   checked={allowOverReceipt}
                   onChange={(e) => setAllowOverReceipt(e.target.checked)}
-                  className="rounded border-slate-300 text-brand"
+                  className="rounded border-line text-brand"
                 />
                 <span>Allow Over-Receipt (accept qty above order)</span>
               </label>
@@ -242,9 +242,9 @@ export function PurchaseOrderFormPage() {
         </div>
 
         {/* Product Lines Card */}
-        <div className="space-y-4 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+        <div className="space-y-4 rounded-2xl border border-line bg-surface p-6 shadow-sm">
           <div className="flex items-center justify-between">
-            <h2 className="font-semibold text-ink">Products to Order</h2>
+            <h2 className="font-semibold text-fg">Products to Order</h2>
             <button
               type="button"
               onClick={addLine}
@@ -258,10 +258,10 @@ export function PurchaseOrderFormPage() {
             {lines.map((line, idx) => (
               <div
                 key={line.id || idx}
-                className="grid grid-cols-12 items-center gap-2 rounded-xl border border-slate-100 bg-slate-50/50 p-3"
+                className="grid grid-cols-12 items-center gap-2 rounded-xl border border-line-soft bg-surface-2/50 p-3"
               >
                 <div className="col-span-12 sm:col-span-4">
-                  <span className="mb-1 block text-xs font-medium text-slate-500 sm:hidden">Product</span>
+                  <span className="mb-1 block text-xs font-medium text-fg-muted sm:hidden">Product</span>
                   <select
                     className={inputClass}
                     value={line.productId}
@@ -278,7 +278,7 @@ export function PurchaseOrderFormPage() {
                 </div>
 
                 <div className="col-span-4 sm:col-span-2">
-                  <span className="mb-1 block text-xs font-medium text-slate-500 sm:hidden">Qty</span>
+                  <span className="mb-1 block text-xs font-medium text-fg-muted sm:hidden">Qty</span>
                   <input
                     className={inputClass}
                     type="number"
@@ -291,7 +291,7 @@ export function PurchaseOrderFormPage() {
                 </div>
 
                 <div className="col-span-4 sm:col-span-2">
-                  <span className="mb-1 block text-xs font-medium text-slate-500 sm:hidden">Unit Cost ($)</span>
+                  <span className="mb-1 block text-xs font-medium text-fg-muted sm:hidden">Unit Cost ($)</span>
                   <input
                     className={inputClass}
                     type="number"
@@ -305,7 +305,7 @@ export function PurchaseOrderFormPage() {
                 </div>
 
                 <div className="col-span-4 sm:col-span-1">
-                  <span className="mb-1 block text-xs font-medium text-slate-500 sm:hidden">Tax %</span>
+                  <span className="mb-1 block text-xs font-medium text-fg-muted sm:hidden">Tax %</span>
                   <input
                     className={inputClass}
                     type="number"
@@ -316,8 +316,8 @@ export function PurchaseOrderFormPage() {
                   />
                 </div>
 
-                <div className="col-span-10 sm:col-span-2 text-right font-semibold text-slate-800">
-                  <span className="mr-2 text-xs font-normal text-slate-400 sm:hidden">Total:</span>$
+                <div className="col-span-10 sm:col-span-2 text-right font-semibold text-fg">
+                  <span className="mr-2 text-xs font-normal text-fg-subtle sm:hidden">Total:</span>$
                   {line.total?.toFixed(2) || '0.00'}
                 </div>
 
@@ -326,7 +326,7 @@ export function PurchaseOrderFormPage() {
                     type="button"
                     disabled={lines.length <= 1}
                     onClick={() => removeLine(idx)}
-                    className="p-1.5 text-slate-400 hover:text-rose-600 disabled:opacity-30"
+                    className="p-1.5 text-fg-subtle hover:text-rose-600 disabled:opacity-30"
                   >
                     <Trash2 size={16} />
                   </button>
@@ -338,22 +338,22 @@ export function PurchaseOrderFormPage() {
           <button
             type="button"
             onClick={addLine}
-            className="flex items-center gap-1.5 rounded-lg border border-dashed border-slate-300 px-3 py-2 text-xs font-semibold text-slate-600 hover:border-brand hover:text-brand"
+            className="flex items-center gap-1.5 rounded-lg border border-dashed border-line px-3 py-2 text-xs font-semibold text-fg-soft hover:border-brand hover:text-brand"
           >
             <Plus size={14} /> Add another line
           </button>
 
           {/* Totals */}
-          <div className="flex flex-col items-end gap-1.5 border-t border-slate-100 pt-4 text-sm">
-            <div className="flex w-64 justify-between text-slate-600">
+          <div className="flex flex-col items-end gap-1.5 border-t border-line-soft pt-4 text-sm">
+            <div className="flex w-64 justify-between text-fg-soft">
               <span>Subtotal:</span>
-              <span className="font-semibold text-slate-800">${orderSubtotal.toFixed(2)}</span>
+              <span className="font-semibold text-fg">${orderSubtotal.toFixed(2)}</span>
             </div>
-            <div className="flex w-64 justify-between text-slate-600">
+            <div className="flex w-64 justify-between text-fg-soft">
               <span>Estimated Tax:</span>
-              <span className="font-semibold text-slate-800">${orderTax.toFixed(2)}</span>
+              <span className="font-semibold text-fg">${orderTax.toFixed(2)}</span>
             </div>
-            <div className="flex w-64 justify-between border-t border-slate-200 pt-1.5 text-base font-bold text-ink">
+            <div className="flex w-64 justify-between border-t border-line pt-1.5 text-base font-bold text-fg">
               <span>Order Total:</span>
               <span className="text-emerald-700">${orderTotal.toFixed(2)}</span>
             </div>
@@ -370,11 +370,11 @@ export function PurchaseOrderFormPage() {
           />
         </Field>
 
-        <div className="flex items-center justify-end gap-3 border-t border-slate-100 pt-4">
+        <div className="flex items-center justify-end gap-3 border-t border-line-soft pt-4">
           <button
             type="button"
             onClick={() => navigate(-1)}
-            className="rounded-lg border border-slate-200 px-4 py-2.5 text-sm font-semibold text-slate-600 hover:bg-slate-50"
+            className="rounded-lg border border-line px-4 py-2.5 text-sm font-semibold text-fg-soft hover:bg-surface-2"
           >
             Cancel
           </button>

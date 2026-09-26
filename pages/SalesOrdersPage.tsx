@@ -44,14 +44,14 @@ export function SalesOrdersPage() {
     <div className="space-y-6">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-2xl font-semibold text-ink">Sales Orders</h1>
-          <p className="text-sm text-muted">
+          <h1 className="text-2xl font-semibold text-fg">Sales Orders</h1>
+          <p className="text-sm text-fg-muted">
             Manage customer demands, reserve real inventory stock, and track dispatch fulfillment.
           </p>
         </div>
         <Link
           to="/sales-orders/new"
-          className="inline-flex items-center gap-2 rounded-lg bg-brand px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-brand-dark"
+          className="inline-flex items-center gap-2 rounded-lg bg-brand px-4 py-2.5 text-sm font-semibold text-accent-fg shadow-sm transition hover:bg-brand-dark"
         >
           <Plus size={16} />
           New Sales Order
@@ -60,49 +60,49 @@ export function SalesOrdersPage() {
 
       {/* KPI Summary Cards */}
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+        <div className="rounded-2xl border border-line bg-surface p-5 shadow-sm">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold uppercase tracking-wider text-muted">Total Sales Orders</span>
+            <span className="text-xs font-semibold uppercase tracking-wider text-fg-muted">Total Sales Orders</span>
             <ShoppingCart className="text-brand" size={20} />
           </div>
-          <div className="mt-2 text-2xl font-bold text-ink">{totalOrders}</div>
-          <div className="mt-1 text-xs text-slate-500">${totalRevenue.toLocaleString()} pipeline value</div>
+          <div className="mt-2 text-2xl font-bold text-fg">{totalOrders}</div>
+          <div className="mt-1 text-xs text-fg-muted">${totalRevenue.toLocaleString()} pipeline value</div>
         </div>
 
-        <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+        <div className="rounded-2xl border border-line bg-surface p-5 shadow-sm">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold uppercase tracking-wider text-muted">In Fulfillment</span>
+            <span className="text-xs font-semibold uppercase tracking-wider text-fg-muted">In Fulfillment</span>
             <Package className="text-amber-500" size={20} />
           </div>
           <div className="mt-2 text-2xl font-bold text-amber-600">{inFulfillment.length}</div>
-          <div className="mt-1 text-xs text-slate-500">Reserved, picking, or packing</div>
+          <div className="mt-1 text-xs text-fg-muted">Reserved, picking, or packing</div>
         </div>
 
-        <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+        <div className="rounded-2xl border border-line bg-surface p-5 shadow-sm">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold uppercase tracking-wider text-muted">In Transit / Shipped</span>
+            <span className="text-xs font-semibold uppercase tracking-wider text-fg-muted">In Transit / Shipped</span>
             <Truck className="text-blue-500" size={20} />
           </div>
           <div className="mt-2 text-2xl font-bold text-blue-600">
             {state.salesOrders.filter((s) => s.status === 'shipped').length}
           </div>
-          <div className="mt-1 text-xs text-slate-500">Dispatched from dock</div>
+          <div className="mt-1 text-xs text-fg-muted">Dispatched from dock</div>
         </div>
 
-        <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+        <div className="rounded-2xl border border-line bg-surface p-5 shadow-sm">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold uppercase tracking-wider text-muted">Delivered</span>
+            <span className="text-xs font-semibold uppercase tracking-wider text-fg-muted">Delivered</span>
             <CheckCircle2 className="text-emerald-600" size={20} />
           </div>
           <div className="mt-2 text-2xl font-bold text-emerald-700">{deliveredOrders.length}</div>
-          <div className="mt-1 text-xs text-slate-500">Fulfilled customer orders</div>
+          <div className="mt-1 text-xs text-fg-muted">Fulfilled customer orders</div>
         </div>
       </div>
 
       {/* Search and Filters */}
       <div className="grid gap-3 sm:grid-cols-2 md:grid-cols-4">
         <div className="relative md:col-span-2">
-          <Search className="absolute left-3 top-3 text-slate-400" size={16} />
+          <Search className="absolute left-3 top-3 text-fg-subtle" size={16} />
           <input
             className={`${inputClass} pl-9`}
             placeholder="Search by SO number, customer name, notes..."
@@ -138,10 +138,10 @@ export function SalesOrdersPage() {
       </div>
 
       {/* Sales Orders Table */}
-      <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+      <div className="overflow-hidden rounded-2xl border border-line bg-surface shadow-sm">
         <div className="overflow-x-auto">
           <table className="w-full text-left text-sm">
-            <thead className="border-b border-slate-100 bg-slate-50 text-xs font-semibold uppercase text-slate-500">
+            <thead className="border-b border-line-soft bg-surface-2 text-xs font-semibold uppercase text-fg-muted">
               <tr>
                 <th className="px-4 py-3.5">SO Number</th>
                 <th className="px-4 py-3.5">Customer</th>
@@ -153,10 +153,10 @@ export function SalesOrdersPage() {
                 <th className="px-4 py-3.5 text-right">Total</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-100">
+            <tbody className="divide-y divide-line-soft">
               {filtered.length === 0 ? (
                 <tr>
-                  <td colSpan={8} className="px-4 py-12 text-center text-sm text-slate-400">
+                  <td colSpan={8} className="px-4 py-12 text-center text-sm text-fg-subtle">
                     No sales orders found matching your filters.
                   </td>
                 </tr>
@@ -167,23 +167,23 @@ export function SalesOrdersPage() {
                   const totalUnits = so.lines.reduce((s, l) => s + l.qty, 0)
 
                   return (
-                    <tr key={so.id} className="transition hover:bg-slate-50/70">
+                    <tr key={so.id} className="transition hover:bg-surface-2/70">
                       <td className="px-4 py-3.5 font-semibold">
                         <Link to={`/sales-orders/${so.id}`} className="text-brand hover:underline">
                           {so.number}
                         </Link>
                       </td>
-                      <td className="px-4 py-3.5 font-medium text-slate-800">{customer?.name || 'Unknown'}</td>
-                      <td className="px-4 py-3.5 text-xs text-slate-600">{warehouse?.name || '—'}</td>
-                      <td className="px-4 py-3.5 text-xs text-slate-600">{so.orderDate}</td>
-                      <td className="px-4 py-3.5 text-xs text-slate-600">{so.deliveryDate}</td>
+                      <td className="px-4 py-3.5 font-medium text-fg">{customer?.name || 'Unknown'}</td>
+                      <td className="px-4 py-3.5 text-xs text-fg-soft">{warehouse?.name || '—'}</td>
+                      <td className="px-4 py-3.5 text-xs text-fg-soft">{so.orderDate}</td>
+                      <td className="px-4 py-3.5 text-xs text-fg-soft">{so.deliveryDate}</td>
                       <td className="px-4 py-3.5">
                         <StatusBadge status={so.status} />
                       </td>
-                      <td className="px-4 py-3.5 text-xs text-slate-600">
+                      <td className="px-4 py-3.5 text-xs text-fg-soft">
                         {so.lines.length} SKU{so.lines.length === 1 ? '' : 's'} · {totalUnits} units
                       </td>
-                      <td className="px-4 py-3.5 text-right font-semibold text-slate-900">
+                      <td className="px-4 py-3.5 text-right font-semibold text-fg">
                         ${so.total.toLocaleString()}
                       </td>
                     </tr>

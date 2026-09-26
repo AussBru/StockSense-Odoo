@@ -3,16 +3,21 @@ import { GuestOnly, RequireAuth } from './components/AppShell'
 import { OperationForm, OperationList } from './components/Operations'
 import { CustomerFormPage } from './pages/CustomerFormPage'
 import { CustomersPage } from './pages/CustomersPage'
+import { CycleCountsPage } from './pages/CycleCountsPage'
 import { DashboardPage } from './pages/DashboardPage'
 import { ForgotPasswordPage } from './pages/ForgotPasswordPage'
 import { HistoryPage } from './pages/HistoryPage'
 import { IntelligencePage } from './pages/IntelligencePage'
 import { LoginPage } from './pages/LoginPage'
+import { LotsPage } from './pages/LotsPage'
+import { PackingPage } from './pages/PackingPage'
+import { PickingPage } from './pages/PickingPage'
 import { ProductFormPage, ProductsPage } from './pages/ProductsPage'
 import { ProfilePage } from './pages/ProfilePage'
 import { PurchaseOrderDetailPage } from './pages/PurchaseOrderDetailPage'
 import { PurchaseOrderFormPage } from './pages/PurchaseOrderFormPage'
 import { PurchaseOrdersPage } from './pages/PurchaseOrdersPage'
+import { PutawayPage } from './pages/PutawayPage'
 import { ReportsPage } from './pages/ReportsPage'
 import { ReturnDetailPage } from './pages/ReturnDetailPage'
 import { ReturnFormPage } from './pages/ReturnFormPage'
@@ -20,12 +25,17 @@ import { ReturnsPage } from './pages/ReturnsPage'
 import { SalesOrderDetailPage } from './pages/SalesOrderDetailPage'
 import { SalesOrderFormPage } from './pages/SalesOrderFormPage'
 import { SalesOrdersPage } from './pages/SalesOrdersPage'
+import { SerialsPage } from './pages/SerialsPage'
+import { ShippingPage } from './pages/ShippingPage'
 import { SignupPage } from './pages/SignupPage'
 import { ValuationPage } from './pages/ValuationPage'
+import { VariantsPage } from './pages/VariantsPage'
 import { VendorDetailPage } from './pages/VendorDetailPage'
 import { VendorFormPage } from './pages/VendorFormPage'
 import { VendorsPage } from './pages/VendorsPage'
+import { WarehouseDashboardPage } from './pages/WarehouseDashboardPage'
 import { WarehousesPage } from './pages/WarehousesPage'
+import { ZonesPage } from './pages/ZonesPage'
 import { StoreProvider } from './store'
 import type { DocType } from './types'
 
@@ -96,6 +106,18 @@ export default function App() {
             {/* Settings & Profile */}
             <Route path="/settings/warehouses" element={<WarehousesPage />} />
             <Route path="/profile" element={<ProfilePage />} />
+
+            {/* Warehouse Operations Addon */}
+            <Route path="/warehouse-dashboard" element={<WarehouseDashboardPage />} />
+            <Route path="/variants" element={<VariantsPage />} />
+            <Route path="/lots" element={<LotsPage />} />
+            <Route path="/serials" element={<SerialsPage />} />
+            <Route path="/picking" element={<PickingPage />} />
+            <Route path="/packing" element={<PackingPage />} />
+            <Route path="/shipping" element={<ShippingPage />} />
+            <Route path="/cycle-counts" element={<CycleCountsPage />} />
+            <Route path="/zones" element={<ZonesPage />} />
+            <Route path="/putaway" element={<PutawayPage />} />
           </Route>
           <Route path="*" element={<Navigate to="/dashboard" replace />} />
         </Routes>

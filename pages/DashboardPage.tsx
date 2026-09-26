@@ -7,7 +7,7 @@ import { lowStockItems, matchesFilters, totalOnHand } from '../lib/inventory'
 import { useStore } from '../store'
 import type { DocStatus, DocType } from '../types'
 
-const kpiCard = 'rounded-2xl border border-slate-200 bg-white p-5 shadow-sm'
+const kpiCard = 'rounded-2xl border border-line bg-surface p-5 shadow-sm'
 
 export function DashboardPage() {
   const { state } = useStore()
@@ -34,8 +34,8 @@ export function DashboardPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-semibold text-ink">Inventory Dashboard</h1>
-        <p className="text-sm text-muted">Live snapshot of stock, documents, and warehouse movement.</p>
+        <h1 className="text-2xl font-semibold text-fg">Inventory Dashboard</h1>
+        <p className="text-sm text-fg-muted">Live snapshot of stock, documents, and warehouse movement.</p>
       </div>
 
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
@@ -47,14 +47,14 @@ export function DashboardPage() {
       </div>
 
       {lows.length > 0 ? (
-        <div className="rounded-2xl border border-rose-100 bg-rose-50 p-4">
+        <div className="rounded-2xl border border-$1-100 dark:border-$1-500/30 bg-rose-50 p-4">
           <div className="mb-2 text-sm font-semibold text-rose-800">Low stock alerts</div>
           <div className="flex flex-wrap gap-2">
             {lows.map((row) => (
               <Link
                 key={row.product.id}
                 to={`/products/${row.product.id}`}
-                className="rounded-full bg-white px-3 py-1 text-xs font-medium text-rose-700 ring-1 ring-rose-200"
+                className="rounded-full bg-surface px-3 py-1 text-xs font-medium text-rose-700 ring-1 ring-$1-200 dark:ring-$1-500/30"
               >
                 {row.product.sku} · {row.onHand} {row.product.uom} {row.out ? '(out)' : `(min ${row.min})`}
               </Link>
@@ -63,7 +63,7 @@ export function DashboardPage() {
         </div>
       ) : null}
 
-      <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+      <div className="rounded-2xl border border-line bg-surface p-4 shadow-sm">
         <div className="mb-3 text-sm font-semibold">Dynamic filters</div>
         <div className="grid gap-3 md:grid-cols-5">
           <select className={inputClass} value={type} onChange={(e) => setType(e.target.value as DocType | 'all')}>
@@ -101,9 +101,9 @@ export function DashboardPage() {
         </div>
       </div>
 
-      <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+      <div className="overflow-hidden rounded-2xl border border-line bg-surface shadow-sm">
         <table className="w-full text-left text-sm">
-          <thead className="bg-slate-50 text-xs uppercase tracking-wide text-slate-500">
+          <thead className="bg-surface-2 text-xs uppercase tracking-wide text-fg-muted">
             <tr>
               <th className="px-4 py-3">Reference</th>
               <th className="px-4 py-3">Type</th>
@@ -127,7 +127,7 @@ export function DashboardPage() {
                       ? `/transfers/${doc.id}`
                       : `/adjustments/${doc.id}`
               return (
-                <tr key={doc.id} className="border-t border-slate-100 hover:bg-slate-50">
+                <tr key={doc.id} className="border-t border-line-soft hover:bg-surface-2">
                   <td className="px-4 py-3 font-medium">
                     <Link className="text-brand hover:underline" to={href}>
                       {doc.number}
@@ -136,19 +136,19 @@ export function DashboardPage() {
                   <td className="px-4 py-3">
                     <TypeBadge type={doc.type} />
                   </td>
-                  <td className="px-4 py-3 text-slate-600">{from?.code ?? '—'}</td>
-                  <td className="px-4 py-3 text-slate-600">{to?.code ?? '—'}</td>
+                  <td className="px-4 py-3 text-fg-soft">{from?.code ?? '—'}</td>
+                  <td className="px-4 py-3 text-fg-soft">{to?.code ?? '—'}</td>
                   <td className="px-4 py-3">{doc.partnerName || '—'}</td>
                   <td className="px-4 py-3">
                     <StatusBadge status={doc.status} />
                   </td>
-                  <td className="px-4 py-3 text-slate-500">{doc.scheduledDate}</td>
+                  <td className="px-4 py-3 text-fg-muted">{doc.scheduledDate}</td>
                 </tr>
               )
             })}
             {rows.length === 0 ? (
               <tr>
-                <td colSpan={7} className="px-4 py-10 text-center text-slate-400">
+                <td colSpan={7} className="px-4 py-10 text-center text-fg-subtle">
                   No operations match these filters.
                 </td>
               </tr>
@@ -180,10 +180,10 @@ function Kpi({
 }) {
   return (
     <div className={kpiCard}>
-      <div className="mb-3 flex h-9 w-9 items-center justify-center rounded-xl bg-slate-50">{icon}</div>
+      <div className="mb-3 flex h-9 w-9 items-center justify-center rounded-xl bg-surface-2">{icon}</div>
       <div className="text-2xl font-semibold">{value}</div>
-      <div className="text-sm font-medium text-slate-700">{label}</div>
-      <div className="text-xs text-muted">{hint}</div>
+      <div className="text-sm font-medium text-fg">{label}</div>
+      <div className="text-xs text-fg-muted">{hint}</div>
     </div>
   )
 }
@@ -192,7 +192,7 @@ function Quick({ to, icon, label }: { to: string; icon: ReactNode; label: string
   return (
     <Link
       to={to}
-      className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-medium hover:border-brand hover:text-brand"
+      className="inline-flex items-center gap-2 rounded-xl border border-line bg-surface px-4 py-2 text-sm font-medium hover:border-brand hover:text-brand"
     >
       {icon}
       {label}

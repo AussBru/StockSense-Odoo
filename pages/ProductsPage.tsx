@@ -32,9 +32,9 @@ export function ProductsPage() {
       <div className="flex items-start justify-between gap-3">
         <div>
           <h1 className="text-2xl font-semibold">Products</h1>
-          <p className="text-sm text-muted">Create SKUs, track availability per location, and set reorder rules.</p>
+          <p className="text-sm text-fg-muted">Create SKUs, track availability per location, and set reorder rules.</p>
         </div>
-        <Link to="/products/new" className="rounded-lg bg-brand px-4 py-2 text-sm font-semibold text-white">
+        <Link to="/products/new" className="rounded-lg bg-brand px-4 py-2 text-sm font-semibold text-accent-fg">
           New
         </Link>
       </div>
@@ -57,9 +57,9 @@ export function ProductsPage() {
           ))}
         </select>
       </div>
-      <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white">
+      <div className="overflow-hidden rounded-2xl border border-line bg-surface">
         <table className="w-full text-left text-sm">
-          <thead className="bg-slate-50 text-xs uppercase text-slate-500">
+          <thead className="bg-surface-2 text-xs uppercase text-fg-muted">
             <tr>
               <th className="px-4 py-3">Product</th>
               <th className="px-4 py-3">SKU</th>
@@ -77,7 +77,7 @@ export function ProductsPage() {
                     .reduce((s, l) => s + qtyAt(state, p.id, l.id), 0)
                 : totalOnHand(state, p.id)
               return (
-                <tr key={p.id} className="border-t border-slate-100">
+                <tr key={p.id} className="border-t border-line-soft">
                   <td className="px-4 py-3 font-medium">
                     <Link className="text-brand hover:underline" to={`/products/${p.id}`}>
                       {p.name}
@@ -141,11 +141,11 @@ export function ProductFormPage() {
     <form onSubmit={onSubmit} className="mx-auto max-w-3xl space-y-6">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-semibold">{isNew ? 'New product' : existing?.name}</h1>
-        <button className="rounded-lg bg-brand px-4 py-2 text-sm font-semibold text-white" type="submit">
+        <button className="rounded-lg bg-brand px-4 py-2 text-sm font-semibold text-accent-fg" type="submit">
           Save
         </button>
       </div>
-      <div className="grid gap-4 rounded-2xl border border-slate-200 bg-white p-5 md:grid-cols-2">
+      <div className="grid gap-4 rounded-2xl border border-line bg-surface p-5 md:grid-cols-2">
         <Field label="Name">
           <input className={inputClass} value={name} onChange={(e) => setName(e.target.value)} required />
         </Field>
@@ -193,7 +193,7 @@ export function ProductFormPage() {
           <input className={inputClass} placeholder="New category name" value={newCat} onChange={(e) => setNewCat(e.target.value)} />
           <button
             type="button"
-            className="rounded-lg border border-slate-200 px-3 text-sm"
+            className="rounded-lg border border-line px-3 text-sm"
             onClick={() => {
               if (!newCat.trim()) return
               const cid = saveCategory(newCat)
@@ -208,10 +208,10 @@ export function ProductFormPage() {
 
       {!isNew && productId ? (
         <>
-          <div className="rounded-2xl border border-slate-200 bg-white p-5">
+          <div className="rounded-2xl border border-line bg-surface p-5">
             <h2 className="mb-3 font-semibold">Stock availability per location</h2>
             <table className="w-full text-sm">
-              <thead className="text-left text-xs uppercase text-slate-500">
+              <thead className="text-left text-xs uppercase text-fg-muted">
                 <tr>
                   <th className="py-2">Location</th>
                   <th className="py-2">Warehouse</th>
@@ -222,7 +222,7 @@ export function ProductFormPage() {
                 {stockByLocation(state, productId).map((row) => {
                   const wh = state.warehouses.find((w) => w.id === row.location.warehouseId)
                   return (
-                    <tr key={row.location.id} className="border-t border-slate-100">
+                    <tr key={row.location.id} className="border-t border-line-soft">
                       <td className="py-2">{row.location.name} ({row.location.code})</td>
                       <td className="py-2">{wh?.name}</td>
                       <td className="py-2 font-semibold">{row.qty}</td>
@@ -231,19 +231,19 @@ export function ProductFormPage() {
                 })}
                 {stockByLocation(state, productId).length === 0 ? (
                   <tr>
-                    <td colSpan={3} className="py-4 text-slate-400">
+                    <td colSpan={3} className="py-4 text-fg-subtle">
                       No on-hand quantity.
                     </td>
                   </tr>
                 ) : null}
               </tbody>
             </table>
-            <p className="mt-2 text-sm text-slate-500">
+            <p className="mt-2 text-sm text-fg-muted">
               Total on hand: <b>{totalOnHand(state, productId)}</b> {existing?.uom}
             </p>
           </div>
 
-          <div className="rounded-2xl border border-slate-200 bg-white p-5">
+          <div className="rounded-2xl border border-line bg-surface p-5">
             <h2 className="mb-3 font-semibold">Reordering rules</h2>
             <div className="mb-3 grid gap-2 md:grid-cols-4">
               <select className={inputClass} value={ruleLoc} onChange={(e) => setRuleLoc(e.target.value)}>
@@ -257,7 +257,7 @@ export function ProductFormPage() {
               <input className={inputClass} type="number" value={ruleMax} onChange={(e) => setRuleMax(e.target.value)} placeholder="Max" />
               <button
                 type="button"
-                className="rounded-lg bg-slate-900 px-3 text-sm text-white"
+                className="rounded-lg bg-accent px-3 text-sm text-accent-fg"
                 onClick={() =>
                   saveReorderRule({
                     productId,
@@ -274,7 +274,7 @@ export function ProductFormPage() {
               {rules.map((r) => {
                 const loc = state.locations.find((l) => l.id === r.locationId)
                 return (
-                  <li key={r.id} className="flex items-center justify-between rounded-lg bg-slate-50 px-3 py-2">
+                  <li key={r.id} className="flex items-center justify-between rounded-lg bg-surface-2 px-3 py-2">
                     <span>
                       {loc?.code}: min {r.minQty} / max {r.maxQty}
                     </span>

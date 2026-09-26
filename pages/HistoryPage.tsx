@@ -23,7 +23,7 @@ export function HistoryPage() {
     <div className="space-y-4">
       <div>
         <h1 className="text-2xl font-semibold">Move History</h1>
-        <p className="text-sm text-muted">Every receipt, transfer, delivery, and adjustment is posted to the stock ledger.</p>
+        <p className="text-sm text-fg-muted">Every receipt, transfer, delivery, and adjustment is posted to the stock ledger.</p>
       </div>
       <div className="grid gap-3 md:grid-cols-2">
         <input className={inputClass} placeholder="Search SKU, document, note" value={q} onChange={(e) => setQ(e.target.value)} />
@@ -36,9 +36,9 @@ export function HistoryPage() {
           ))}
         </select>
       </div>
-      <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white">
+      <div className="overflow-hidden rounded-2xl border border-line bg-surface">
         <table className="w-full text-left text-sm">
-          <thead className="bg-slate-50 text-xs uppercase text-slate-500">
+          <thead className="bg-surface-2 text-xs uppercase text-fg-muted">
             <tr>
               <th className="px-4 py-3">When</th>
               <th className="px-4 py-3">Document</th>
@@ -55,8 +55,8 @@ export function HistoryPage() {
               const from = state.locations.find((l) => l.id === e.fromLocationId)
               const to = state.locations.find((l) => l.id === e.toLocationId)
               return (
-                <tr key={e.id} className="border-t border-slate-100">
-                  <td className="px-4 py-3 text-slate-500">{formatDate(e.date)}</td>
+                <tr key={e.id} className="border-t border-line-soft">
+                  <td className="px-4 py-3 text-fg-muted">{formatDate(e.date)}</td>
                   <td className="px-4 py-3">
                     {e.type !== 'initial' ? <TypeBadge type={e.type} /> : <span className="text-xs">Opening</span>}
                     <div className="font-mono text-xs">{e.documentNumber}</div>
@@ -65,12 +65,12 @@ export function HistoryPage() {
                     <Link className="text-brand hover:underline" to={`/products/${e.productId}`}>
                       {p?.name}
                     </Link>
-                    <div className="font-mono text-[11px] text-slate-400">{p?.sku}</div>
+                    <div className="font-mono text-[11px] text-fg-subtle">{p?.sku}</div>
                   </td>
                   <td className="px-4 py-3">{from?.code ?? '—'}</td>
                   <td className="px-4 py-3">{to?.code ?? '—'}</td>
                   <td className="px-4 py-3 font-semibold">{e.qty}</td>
-                  <td className="px-4 py-3 text-slate-500">{e.note}</td>
+                  <td className="px-4 py-3 text-fg-muted">{e.note}</td>
                 </tr>
               )
             })}

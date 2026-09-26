@@ -39,9 +39,9 @@ export function SalesOrderDetailPage() {
 
   if (!so) {
     return (
-      <div className="rounded-2xl border border-slate-200 bg-white p-8 text-center shadow-sm">
-        <h2 className="text-lg font-semibold text-ink">Sales Order not found</h2>
-        <p className="mt-1 text-sm text-muted">The requested SO could not be located.</p>
+      <div className="rounded-2xl border border-line bg-surface p-8 text-center shadow-sm">
+        <h2 className="text-lg font-semibold text-fg">Sales Order not found</h2>
+        <p className="mt-1 text-sm text-fg-muted">The requested SO could not be located.</p>
         <Link to="/sales-orders" className="mt-4 inline-block text-sm font-semibold text-brand hover:underline">
           Back to Sales Orders
         </Link>
@@ -125,16 +125,16 @@ export function SalesOrderDetailPage() {
           <button
             type="button"
             onClick={() => navigate('/sales-orders')}
-            className="flex h-9 w-9 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-500 hover:bg-slate-50"
+            className="flex h-9 w-9 items-center justify-center rounded-lg border border-line bg-surface text-fg-muted hover:bg-surface-2"
           >
             <ArrowLeft size={16} />
           </button>
           <div>
             <div className="flex items-center gap-2">
-              <h1 className="text-2xl font-bold text-ink">{so.number}</h1>
+              <h1 className="text-2xl font-bold text-fg">{so.number}</h1>
               <StatusBadge status={so.status} />
             </div>
-            <div className="text-xs text-slate-400">Created: {new Date(so.createdAt).toLocaleString()}</div>
+            <div className="text-xs text-fg-subtle">Created: {new Date(so.createdAt).toLocaleString()}</div>
           </div>
         </div>
 
@@ -144,14 +144,14 @@ export function SalesOrderDetailPage() {
               <button
                 type="button"
                 onClick={handleConfirm}
-                className="inline-flex items-center gap-1.5 rounded-lg bg-brand px-3.5 py-2 text-sm font-semibold text-white shadow-sm hover:bg-brand-dark"
+                className="inline-flex items-center gap-1.5 rounded-lg bg-brand px-3.5 py-2 text-sm font-semibold text-accent-fg shadow-sm hover:bg-brand-dark"
               >
                 <CheckCircle2 size={16} />
                 Confirm Order
               </button>
               <Link
                 to={`/sales-orders/${so.id}/edit`}
-                className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3.5 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50"
+                className="inline-flex items-center gap-1.5 rounded-lg border border-line bg-surface px-3.5 py-2 text-sm font-semibold text-fg hover:bg-surface-2"
               >
                 <Edit size={16} />
                 Edit
@@ -217,7 +217,7 @@ export function SalesOrderDetailPage() {
           <button
             type="button"
             onClick={handleDuplicate}
-            className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3.5 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50"
+            className="inline-flex items-center gap-1.5 rounded-lg border border-line bg-surface px-3.5 py-2 text-sm font-semibold text-fg hover:bg-surface-2"
           >
             <Copy size={16} />
             Duplicate
@@ -226,7 +226,7 @@ export function SalesOrderDetailPage() {
           <button
             type="button"
             onClick={() => window.print()}
-            className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3.5 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50"
+            className="inline-flex items-center gap-1.5 rounded-lg border border-line bg-surface px-3.5 py-2 text-sm font-semibold text-fg hover:bg-surface-2"
           >
             <Printer size={16} />
             Print
@@ -236,7 +236,7 @@ export function SalesOrderDetailPage() {
             <button
               type="button"
               onClick={handleCancel}
-              className="inline-flex items-center gap-1.5 rounded-lg border border-rose-200 bg-white px-3.5 py-2 text-sm font-semibold text-rose-600 hover:bg-rose-50"
+              className="inline-flex items-center gap-1.5 rounded-lg border border-rose-200 bg-surface px-3.5 py-2 text-sm font-semibold text-rose-600 hover:bg-rose-50"
             >
               <XCircle size={16} />
               Cancel
@@ -259,8 +259,8 @@ export function SalesOrderDetailPage() {
       ) : null}
 
       {/* Lifecycle Progress Bar */}
-      <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-        <div className="text-xs font-semibold uppercase tracking-wider text-muted">Order & Fulfillment Lifecycle</div>
+      <div className="rounded-2xl border border-line bg-surface p-5 shadow-sm">
+        <div className="text-xs font-semibold uppercase tracking-wider text-fg-muted">Order & Fulfillment Lifecycle</div>
         {so.status === 'canceled' ? (
           <div className="mt-3 flex items-center gap-2 rounded-lg bg-rose-50 p-3 text-sm font-medium text-rose-700">
             <XCircle size={16} />
@@ -278,8 +278,8 @@ export function SalesOrderDetailPage() {
                     isCurrent
                       ? 'border-brand bg-brand/10 text-brand shadow-sm'
                       : isDone
-                      ? 'border-emerald-200 bg-emerald-50 text-emerald-800'
-                      : 'border-slate-100 bg-slate-50 text-slate-400'
+                      ? 'border-emerald-200 bg-$1-50 text-$1-800 dark:bg-$1-500/15 dark:text-$1-300'
+                      : 'border-line-soft bg-surface-2 text-fg-subtle'
                   }`}
                 >
                   <div>{s.label}</div>
@@ -292,58 +292,58 @@ export function SalesOrderDetailPage() {
 
       {/* Customer & Fulfillment Info */}
       <div className="grid gap-6 md:grid-cols-3">
-        <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-          <h2 className="text-xs font-semibold uppercase tracking-wider text-muted">Customer Information</h2>
-          <div className="mt-2 text-base font-bold text-ink">{customer?.name || 'Unknown'}</div>
-          <div className="mt-1 text-xs text-slate-500">Email: {customer?.email || '—'}</div>
-          <div className="mt-0.5 text-xs text-slate-500">Phone: {customer?.phone || '—'}</div>
-          <div className="mt-0.5 text-xs text-slate-500">Billing: {customer?.address || '—'}</div>
+        <div className="rounded-2xl border border-line bg-surface p-5 shadow-sm">
+          <h2 className="text-xs font-semibold uppercase tracking-wider text-fg-muted">Customer Information</h2>
+          <div className="mt-2 text-base font-bold text-fg">{customer?.name || 'Unknown'}</div>
+          <div className="mt-1 text-xs text-fg-muted">Email: {customer?.email || '—'}</div>
+          <div className="mt-0.5 text-xs text-fg-muted">Phone: {customer?.phone || '—'}</div>
+          <div className="mt-0.5 text-xs text-fg-muted">Billing: {customer?.address || '—'}</div>
         </div>
 
-        <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-          <h2 className="text-xs font-semibold uppercase tracking-wider text-muted">Fulfillment Warehouse</h2>
-          <div className="mt-2 text-base font-bold text-ink">{warehouse?.name || 'Main Warehouse'}</div>
-          <div className="mt-1 text-xs text-slate-500">Warehouse Code: {warehouse?.code || 'WH1'}</div>
-          <div className="mt-0.5 text-xs text-slate-500">{warehouse?.address || '—'}</div>
+        <div className="rounded-2xl border border-line bg-surface p-5 shadow-sm">
+          <h2 className="text-xs font-semibold uppercase tracking-wider text-fg-muted">Fulfillment Warehouse</h2>
+          <div className="mt-2 text-base font-bold text-fg">{warehouse?.name || 'Main Warehouse'}</div>
+          <div className="mt-1 text-xs text-fg-muted">Warehouse Code: {warehouse?.code || 'WH1'}</div>
+          <div className="mt-0.5 text-xs text-fg-muted">{warehouse?.address || '—'}</div>
         </div>
 
-        <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-          <h2 className="text-xs font-semibold uppercase tracking-wider text-muted">Timeline & Terms</h2>
+        <div className="rounded-2xl border border-line bg-surface p-5 shadow-sm">
+          <h2 className="text-xs font-semibold uppercase tracking-wider text-fg-muted">Timeline & Terms</h2>
           <div className="mt-2 flex justify-between text-xs">
-            <span className="text-slate-500">Order Date:</span>
-            <span className="font-semibold text-slate-800">{so.orderDate}</span>
+            <span className="text-fg-muted">Order Date:</span>
+            <span className="font-semibold text-fg">{so.orderDate}</span>
           </div>
           <div className="mt-1.5 flex justify-between text-xs">
-            <span className="text-slate-500">Expected Delivery:</span>
+            <span className="text-fg-muted">Expected Delivery:</span>
             <span className="font-semibold text-indigo-700">{so.deliveryDate}</span>
           </div>
           <div className="mt-1.5 flex justify-between text-xs">
-            <span className="text-slate-500">Tax Registration:</span>
-            <span className="font-semibold text-slate-800">{customer?.taxNumber || '—'}</span>
+            <span className="text-fg-muted">Tax Registration:</span>
+            <span className="font-semibold text-fg">{customer?.taxNumber || '—'}</span>
           </div>
         </div>
       </div>
 
       {/* Product Line Items & Stock Availability Matrix */}
-      <div className="space-y-4 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+      <div className="space-y-4 rounded-2xl border border-line bg-surface p-5 shadow-sm">
         <div className="flex items-center justify-between">
           <div>
-            <h2 className="font-semibold text-ink">Products & Stock Reservation Matrix</h2>
-            <p className="text-xs text-slate-400">
+            <h2 className="font-semibold text-fg">Products & Stock Reservation Matrix</h2>
+            <p className="text-xs text-fg-subtle">
               Formula: Available = On Hand - Reserved. Stock is verified during reservation.
             </p>
           </div>
-          <span className="text-xs font-semibold text-slate-500">{so.lines.length} Line Items</span>
+          <span className="text-xs font-semibold text-fg-muted">{so.lines.length} Line Items</span>
         </div>
 
         <div className="overflow-x-auto">
           <table className="w-full text-left text-sm">
-            <thead className="border-b border-slate-100 bg-slate-50 text-xs font-semibold uppercase text-slate-500">
+            <thead className="border-b border-line-soft bg-surface-2 text-xs font-semibold uppercase text-fg-muted">
               <tr>
                 <th className="px-4 py-3">Product</th>
                 <th className="px-4 py-3">SKU</th>
                 <th className="px-4 py-3 text-right">Order Qty</th>
-                <th className="px-4 py-3 text-right text-slate-600">On Hand</th>
+                <th className="px-4 py-3 text-right text-fg-soft">On Hand</th>
                 <th className="px-4 py-3 text-right text-purple-700">Reserved</th>
                 <th className="px-4 py-3 text-right text-emerald-700">Available</th>
                 <th className="px-4 py-3 text-right">Unit Price</th>
@@ -351,7 +351,7 @@ export function SalesOrderDetailPage() {
                 <th className="px-4 py-3 text-right">Total</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-100">
+            <tbody className="divide-y divide-line-soft">
               {so.lines.map((line) => {
                 const prod = state.products.find((p) => p.id === line.productId)
                 const onHand = prod ? (so.warehouseId ? qtyByWarehouse(state, prod.id, so.warehouseId) : totalOnHand(state, prod.id)) : 0
@@ -360,8 +360,8 @@ export function SalesOrderDetailPage() {
                 const isShortage = available < line.qty && so.status === 'confirmed'
 
                 return (
-                  <tr key={line.id} className={`hover:bg-slate-50/50 ${isShortage ? 'bg-rose-50/50' : ''}`}>
-                    <td className="px-4 py-3 font-medium text-slate-800">
+                  <tr key={line.id} className={`hover:bg-surface-2/50 ${isShortage ? 'bg-rose-50/50' : ''}`}>
+                    <td className="px-4 py-3 font-medium text-fg">
                       {prod ? (
                         <Link to={`/products/${prod.id}`} className="hover:underline">
                           {prod.name}
@@ -373,14 +373,14 @@ export function SalesOrderDetailPage() {
                         <div className="text-[11px] font-semibold text-rose-600">Shortage for reservation!</div>
                       ) : null}
                     </td>
-                    <td className="px-4 py-3 font-mono text-xs text-slate-500">{prod?.sku || '—'}</td>
-                    <td className="px-4 py-3 text-right font-bold text-slate-900">{line.qty}</td>
-                    <td className="px-4 py-3 text-right font-medium text-slate-600">{onHand}</td>
+                    <td className="px-4 py-3 font-mono text-xs text-fg-muted">{prod?.sku || '—'}</td>
+                    <td className="px-4 py-3 text-right font-bold text-fg">{line.qty}</td>
+                    <td className="px-4 py-3 text-right font-medium text-fg-soft">{onHand}</td>
                     <td className="px-4 py-3 text-right font-medium text-purple-700">{reserved}</td>
                     <td className="px-4 py-3 text-right font-bold text-emerald-700">{available}</td>
-                    <td className="px-4 py-3 text-right text-slate-700">${line.unitPrice.toFixed(2)}</td>
-                    <td className="px-4 py-3 text-right text-slate-500">{line.discount}%</td>
-                    <td className="px-4 py-3 text-right font-semibold text-slate-900">${line.total.toFixed(2)}</td>
+                    <td className="px-4 py-3 text-right text-fg">${line.unitPrice.toFixed(2)}</td>
+                    <td className="px-4 py-3 text-right text-fg-muted">{line.discount}%</td>
+                    <td className="px-4 py-3 text-right font-semibold text-fg">${line.total.toFixed(2)}</td>
                   </tr>
                 )
               })}
@@ -389,24 +389,24 @@ export function SalesOrderDetailPage() {
         </div>
 
         {/* Totals Summary */}
-        <div className="flex flex-col items-end gap-1.5 border-t border-slate-100 pt-4 text-sm">
-          <div className="flex w-64 justify-between text-slate-600">
+        <div className="flex flex-col items-end gap-1.5 border-t border-line-soft pt-4 text-sm">
+          <div className="flex w-64 justify-between text-fg-soft">
             <span>Subtotal:</span>
-            <span className="font-semibold text-slate-800">${so.subtotal.toFixed(2)}</span>
+            <span className="font-semibold text-fg">${so.subtotal.toFixed(2)}</span>
           </div>
-          <div className="flex w-64 justify-between text-slate-600">
+          <div className="flex w-64 justify-between text-fg-soft">
             <span>Tax:</span>
-            <span className="font-semibold text-slate-800">${so.tax.toFixed(2)}</span>
+            <span className="font-semibold text-fg">${so.tax.toFixed(2)}</span>
           </div>
-          <div className="flex w-64 justify-between border-t border-slate-200 pt-1.5 text-base font-bold text-ink">
+          <div className="flex w-64 justify-between border-t border-line pt-1.5 text-base font-bold text-fg">
             <span>Order Total:</span>
             <span className="text-emerald-700">${so.total.toFixed(2)}</span>
           </div>
         </div>
 
         {so.notes ? (
-          <div className="border-t border-slate-100 pt-3 text-xs text-slate-500">
-            <span className="font-semibold text-slate-700">Special Instructions: </span>
+          <div className="border-t border-line-soft pt-3 text-xs text-fg-muted">
+            <span className="font-semibold text-fg">Special Instructions: </span>
             {so.notes}
           </div>
         ) : null}
@@ -414,11 +414,11 @@ export function SalesOrderDetailPage() {
 
       {/* Linked Delivery Document */}
       {so.deliveryDocId ? (
-        <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-          <h2 className="mb-2 font-semibold text-ink">Linked Outbound Delivery Document</h2>
+        <div className="rounded-2xl border border-line bg-surface p-5 shadow-sm">
+          <h2 className="mb-2 font-semibold text-fg">Linked Outbound Delivery Document</h2>
           <Link
             to={`/deliveries/${so.deliveryDocId}`}
-            className="inline-flex items-center gap-2 rounded-lg border border-slate-200 bg-slate-50 px-3.5 py-2 text-xs font-semibold text-brand hover:bg-slate-100"
+            className="inline-flex items-center gap-2 rounded-lg border border-line bg-surface-2 px-3.5 py-2 text-xs font-semibold text-brand hover:bg-surface-2"
           >
             <Truck size={16} />
             <span>

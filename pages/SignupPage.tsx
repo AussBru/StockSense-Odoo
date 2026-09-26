@@ -49,7 +49,7 @@ export function SignupPage() {
         {error ? <p className="text-sm text-rose-600">{error}</p> : null}
         <PrimaryButton disabled={busy}>{busy ? 'Creating…' : 'Sign up'}</PrimaryButton>
       </AuthForm>
-      <p className="mt-4 text-sm text-slate-500">
+      <p className="mt-4 text-sm text-fg-muted">
         Already have an account?{' '}
         <Link className="text-brand hover:underline" to="/login">
           Log in

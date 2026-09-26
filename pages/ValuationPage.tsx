@@ -134,8 +134,8 @@ export function ValuationPage() {
     <div className="space-y-6">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-2xl font-semibold text-ink">Inventory Valuation</h1>
-          <p className="text-sm text-muted">
+          <h1 className="text-2xl font-semibold text-fg">Inventory Valuation</h1>
+          <p className="text-sm text-fg-muted">
             Asset accounting based on Weighted Average Cost (WAC). Global, warehouse, and category breakdowns.
           </p>
         </div>
@@ -143,7 +143,7 @@ export function ValuationPage() {
           <button
             type="button"
             onClick={handleExportCsv}
-            className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3.5 py-2 text-sm font-semibold text-slate-700 shadow-sm hover:bg-slate-50"
+            className="inline-flex items-center gap-1.5 rounded-lg border border-line bg-surface px-3.5 py-2 text-sm font-semibold text-fg shadow-sm hover:bg-surface-2"
           >
             <Download size={15} />
             Export CSV
@@ -151,7 +151,7 @@ export function ValuationPage() {
           <button
             type="button"
             onClick={() => window.print()}
-            className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3.5 py-2 text-sm font-semibold text-slate-700 shadow-sm hover:bg-slate-50"
+            className="inline-flex items-center gap-1.5 rounded-lg border border-line bg-surface px-3.5 py-2 text-sm font-semibold text-fg shadow-sm hover:bg-surface-2"
           >
             <Printer size={15} />
             Print
@@ -161,50 +161,50 @@ export function ValuationPage() {
 
       {/* Global Valuation KPI Cards */}
       <div className="grid gap-4 sm:grid-cols-3">
-        <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+        <div className="rounded-2xl border border-line bg-surface p-5 shadow-sm">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold uppercase tracking-wider text-muted">Total Stock Valuation</span>
+            <span className="text-xs font-semibold uppercase tracking-wider text-fg-muted">Total Stock Valuation</span>
             <DollarSign className="text-emerald-600" size={20} />
           </div>
           <div className="mt-2 text-2xl font-bold text-emerald-700">
             ${globalValuation.totalValue.toLocaleString(undefined, { minimumFractionDigits: 2 })}
           </div>
-          <div className="mt-1 text-xs text-slate-500">Total inventory asset value (WAC)</div>
+          <div className="mt-1 text-xs text-fg-muted">Total inventory asset value (WAC)</div>
         </div>
 
-        <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+        <div className="rounded-2xl border border-line bg-surface p-5 shadow-sm">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold uppercase tracking-wider text-muted">Total Quantity on Hand</span>
+            <span className="text-xs font-semibold uppercase tracking-wider text-fg-muted">Total Quantity on Hand</span>
             <Package className="text-brand" size={20} />
           </div>
-          <div className="mt-2 text-2xl font-bold text-ink">{globalValuation.totalUnits.toLocaleString()} units</div>
-          <div className="mt-1 text-xs text-slate-500">Across {state.warehouses.length} storage facilities</div>
+          <div className="mt-2 text-2xl font-bold text-fg">{globalValuation.totalUnits.toLocaleString()} units</div>
+          <div className="mt-1 text-xs text-fg-muted">Across {state.warehouses.length} storage facilities</div>
         </div>
 
-        <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+        <div className="rounded-2xl border border-line bg-surface p-5 shadow-sm">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold uppercase tracking-wider text-muted">Avg Unit Valuation</span>
+            <span className="text-xs font-semibold uppercase tracking-wider text-fg-muted">Avg Unit Valuation</span>
             <Layers className="text-indigo-600" size={20} />
           </div>
-          <div className="mt-2 text-2xl font-bold text-slate-800">
+          <div className="mt-2 text-2xl font-bold text-fg">
             $
             {globalValuation.totalUnits > 0
               ? (globalValuation.totalValue / globalValuation.totalUnits).toFixed(2)
               : '0.00'}
           </div>
-          <div className="mt-1 text-xs text-slate-500">Blended cost per physical unit</div>
+          <div className="mt-1 text-xs text-fg-muted">Blended cost per physical unit</div>
         </div>
       </div>
 
       {/* Tabs */}
-      <div className="flex border-b border-slate-200">
+      <div className="flex border-b border-line">
         <button
           type="button"
           onClick={() => setActiveTab('product')}
           className={`flex items-center gap-2 border-b-2 px-5 py-3 text-sm font-semibold transition ${
             activeTab === 'product'
               ? 'border-brand text-brand'
-              : 'border-transparent text-slate-500 hover:text-slate-800'
+              : 'border-transparent text-fg-muted hover:text-fg'
           }`}
         >
           <Package size={16} />
@@ -217,7 +217,7 @@ export function ValuationPage() {
           className={`flex items-center gap-2 border-b-2 px-5 py-3 text-sm font-semibold transition ${
             activeTab === 'warehouse'
               ? 'border-brand text-brand'
-              : 'border-transparent text-slate-500 hover:text-slate-800'
+              : 'border-transparent text-fg-muted hover:text-fg'
           }`}
         >
           <Building2 size={16} />
@@ -230,7 +230,7 @@ export function ValuationPage() {
           className={`flex items-center gap-2 border-b-2 px-5 py-3 text-sm font-semibold transition ${
             activeTab === 'category'
               ? 'border-brand text-brand'
-              : 'border-transparent text-slate-500 hover:text-slate-800'
+              : 'border-transparent text-fg-muted hover:text-fg'
           }`}
         >
           <Layers size={16} />
@@ -243,7 +243,7 @@ export function ValuationPage() {
         <div className="space-y-4">
           <div className="grid gap-3 sm:grid-cols-2 md:grid-cols-3">
             <div className="relative">
-              <Search className="absolute left-3 top-3 text-slate-400" size={16} />
+              <Search className="absolute left-3 top-3 text-fg-subtle" size={16} />
               <input
                 className={`${inputClass} pl-9`}
                 placeholder="Search SKU or product..."
@@ -271,38 +271,38 @@ export function ValuationPage() {
             </select>
           </div>
 
-          <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+          <div className="overflow-hidden rounded-2xl border border-line bg-surface shadow-sm">
             <div className="overflow-x-auto">
               <table className="w-full text-left text-sm">
-                <thead className="border-b border-slate-100 bg-slate-50 text-xs font-semibold uppercase text-slate-500">
+                <thead className="border-b border-line-soft bg-surface-2 text-xs font-semibold uppercase text-fg-muted">
                   <tr>
                     <th className="px-4 py-3.5">Product Name</th>
                     <th className="px-4 py-3.5">SKU</th>
                     <th className="px-4 py-3.5">Category</th>
                     <th className="px-4 py-3.5 text-right">On Hand Units</th>
                     <th className="px-4 py-3.5 text-right">WAC Unit Cost ($)</th>
-                    <th className="px-4 py-3.5 text-right font-bold text-slate-900">Total Valuation ($)</th>
+                    <th className="px-4 py-3.5 text-right font-bold text-fg">Total Valuation ($)</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-100">
+                <tbody className="divide-y divide-line-soft">
                   {productRows.map((r) => (
-                    <tr key={r.product.id} className="transition hover:bg-slate-50/70">
-                      <td className="px-4 py-3.5 font-semibold text-slate-800">
+                    <tr key={r.product.id} className="transition hover:bg-surface-2/70">
+                      <td className="px-4 py-3.5 font-semibold text-fg">
                         <Link to={`/products/${r.product.id}`} className="hover:underline">
                           {r.product.name}
                         </Link>
                       </td>
-                      <td className="px-4 py-3.5 font-mono text-xs text-slate-500">{r.product.sku}</td>
-                      <td className="px-4 py-3.5 text-xs text-slate-600">{r.categoryName}</td>
+                      <td className="px-4 py-3.5 font-mono text-xs text-fg-muted">{r.product.sku}</td>
+                      <td className="px-4 py-3.5 text-xs text-fg-soft">{r.categoryName}</td>
                       <td className="px-4 py-3.5 text-right font-medium">{r.onHand}</td>
-                      <td className="px-4 py-3.5 text-right text-slate-700">${r.unitCost.toFixed(2)}</td>
+                      <td className="px-4 py-3.5 text-right text-fg">${r.unitCost.toFixed(2)}</td>
                       <td className="px-4 py-3.5 text-right font-bold text-emerald-700">
                         ${r.totalValue.toLocaleString(undefined, { minimumFractionDigits: 2 })}
                       </td>
                     </tr>
                   ))}
                 </tbody>
-                <tfoot className="border-t-2 border-slate-200 bg-slate-50/80 font-semibold text-slate-800">
+                <tfoot className="border-t-2 border-line bg-surface-2/80 font-semibold text-fg">
                   <tr>
                     <td colSpan={3} className="px-4 py-3 text-right">
                       Totals:
@@ -327,24 +327,24 @@ export function ValuationPage() {
 
       {/* TAB 2: By Warehouse */}
       {activeTab === 'warehouse' && (
-        <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+        <div className="overflow-hidden rounded-2xl border border-line bg-surface shadow-sm">
           <table className="w-full text-left text-sm">
-            <thead className="border-b border-slate-100 bg-slate-50 text-xs font-semibold uppercase text-slate-500">
+            <thead className="border-b border-line-soft bg-surface-2 text-xs font-semibold uppercase text-fg-muted">
               <tr>
                 <th className="px-4 py-3.5">Warehouse</th>
                 <th className="px-4 py-3.5">Code</th>
                 <th className="px-4 py-3.5">Address</th>
                 <th className="px-4 py-3.5 text-right">Stocked SKUs</th>
                 <th className="px-4 py-3.5 text-right">Total Units</th>
-                <th className="px-4 py-3.5 text-right font-bold text-slate-900">Total Valuation ($)</th>
+                <th className="px-4 py-3.5 text-right font-bold text-fg">Total Valuation ($)</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-100">
+            <tbody className="divide-y divide-line-soft">
               {warehouseRows.map((r) => (
-                <tr key={r.warehouse.id} className="transition hover:bg-slate-50/70">
-                  <td className="px-4 py-3.5 font-semibold text-slate-800">{r.warehouse.name}</td>
-                  <td className="px-4 py-3.5 font-mono text-xs text-slate-500">{r.warehouse.code}</td>
-                  <td className="px-4 py-3.5 text-xs text-slate-600">{r.warehouse.address || '—'}</td>
+                <tr key={r.warehouse.id} className="transition hover:bg-surface-2/70">
+                  <td className="px-4 py-3.5 font-semibold text-fg">{r.warehouse.name}</td>
+                  <td className="px-4 py-3.5 font-mono text-xs text-fg-muted">{r.warehouse.code}</td>
+                  <td className="px-4 py-3.5 text-xs text-fg-soft">{r.warehouse.address || '—'}</td>
                   <td className="px-4 py-3.5 text-right font-medium">{r.skuCount} SKUs</td>
                   <td className="px-4 py-3.5 text-right font-medium">{r.totalUnits.toLocaleString()}</td>
                   <td className="px-4 py-3.5 text-right font-bold text-emerald-700">
@@ -353,7 +353,7 @@ export function ValuationPage() {
                 </tr>
               ))}
             </tbody>
-            <tfoot className="border-t-2 border-slate-200 bg-slate-50/80 font-semibold text-slate-800">
+            <tfoot className="border-t-2 border-line bg-surface-2/80 font-semibold text-fg">
               <tr>
                 <td colSpan={4} className="px-4 py-3 text-right">
                   Total Valuation Across Warehouses:
@@ -375,20 +375,20 @@ export function ValuationPage() {
 
       {/* TAB 3: By Category */}
       {activeTab === 'category' && (
-        <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+        <div className="overflow-hidden rounded-2xl border border-line bg-surface shadow-sm">
           <table className="w-full text-left text-sm">
-            <thead className="border-b border-slate-100 bg-slate-50 text-xs font-semibold uppercase text-slate-500">
+            <thead className="border-b border-line-soft bg-surface-2 text-xs font-semibold uppercase text-fg-muted">
               <tr>
                 <th className="px-4 py-3.5">Product Category</th>
                 <th className="px-4 py-3.5 text-right">Total Catalog SKUs</th>
                 <th className="px-4 py-3.5 text-right">Units on Hand</th>
-                <th className="px-4 py-3.5 text-right font-bold text-slate-900">Total Asset Value ($)</th>
+                <th className="px-4 py-3.5 text-right font-bold text-fg">Total Asset Value ($)</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-100">
+            <tbody className="divide-y divide-line-soft">
               {categoryRows.map((r) => (
-                <tr key={r.category.id} className="transition hover:bg-slate-50/70">
-                  <td className="px-4 py-3.5 font-semibold text-slate-800">{r.category.name}</td>
+                <tr key={r.category.id} className="transition hover:bg-surface-2/70">
+                  <td className="px-4 py-3.5 font-semibold text-fg">{r.category.name}</td>
                   <td className="px-4 py-3.5 text-right font-medium">{r.skuCount} SKUs</td>
                   <td className="px-4 py-3.5 text-right font-medium">{r.totalUnits.toLocaleString()}</td>
                   <td className="px-4 py-3.5 text-right font-bold text-emerald-700">
@@ -397,7 +397,7 @@ export function ValuationPage() {
                 </tr>
               ))}
             </tbody>
-            <tfoot className="border-t-2 border-slate-200 bg-slate-50/80 font-semibold text-slate-800">
+            <tfoot className="border-t-2 border-line bg-surface-2/80 font-semibold text-fg">
               <tr>
                 <td colSpan={2} className="px-4 py-3 text-right">
                   Total Category Valuation:

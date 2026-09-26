@@ -2,13 +2,60 @@
 @tailwind components;
 @tailwind utilities;
 
+/*
+  StockSense — ivory & black theme.
+  Every semantic color is a CSS variable so toggling `.dark` on <html>
+  re-themes the whole app. Values are space-separated RGB channels so
+  Tailwind's `<alpha-value>` opacity modifiers (e.g. `bg-brand/30`) work.
+*/
+
 :root {
-  --font-sans: "Segoe UI", Inter, system-ui, sans-serif;
-  --color-ink: #0f172a;
-  --color-muted: #64748b;
-  --color-brand: #5b4bff;
-  --color-brand-dark: #4338ca;
-  --color-sidebar: #111827;
+  --font-sans: "Segoe UI", Inter, system-ui, -apple-system, sans-serif;
+
+  /* surfaces */
+  --c-canvas: 246 244 238; /* ivory */
+  --c-surface: 255 255 255;
+  --c-surface-2: 240 237 229;
+  --c-line: 226 222 212;
+  --c-line-soft: 238 235 226;
+
+  /* text */
+  --c-fg: 17 17 17; /* black */
+  --c-fg-soft: 74 71 65;
+  --c-fg-muted: 116 111 101;
+  --c-fg-subtle: 158 152 140;
+
+  /* accent — black on light */
+  --c-accent: 17 17 17;
+  --c-accent-hover: 51 51 51;
+  --c-accent-soft: 226 222 212;
+  --c-accent-fg: 255 255 255;
+
+  /* sidebar stays black in both modes */
+  --c-sidebar: 14 14 15;
+  --c-on-sidebar: 242 239 230;
+}
+
+.dark {
+  --c-canvas: 10 10 11;
+  --c-surface: 22 22 24;
+  --c-surface-2: 30 30 33;
+  --c-line: 44 44 48;
+  --c-line-soft: 33 33 36;
+
+  --c-fg: 242 239 230; /* ivory */
+  --c-fg-soft: 200 195 182;
+  --c-fg-muted: 154 148 136;
+  --c-fg-subtle: 118 113 102;
+
+  /* accent — ivory on dark */
+  --c-accent: 242 239 230;
+  --c-accent-hover: 219 215 203;
+  --c-accent-soft: 44 44 48;
+  --c-accent-fg: 10 10 11;
+
+  --c-sidebar: 0 0 0;
+  --c-on-sidebar: 242 239 230;
 }
 
 html,
@@ -17,11 +64,21 @@ body,
   min-height: 100%;
 }
 
+html {
+  color-scheme: light;
+}
+.dark html,
+html.dark {
+  color-scheme: dark;
+}
+
 body {
   margin: 0;
   font-family: var(--font-sans);
-  background: #f4f6fb;
-  color: #0f172a;
+  background: rgb(var(--c-canvas));
+  color: rgb(var(--c-fg));
+  -webkit-font-smoothing: antialiased;
+  transition: background-color 0.2s ease, color 0.2s ease;
 }
 
 #root {
@@ -40,11 +97,18 @@ button {
   font-family: inherit;
 }
 
+/* Native form controls follow the theme */
+.dark input,
+.dark select,
+.dark textarea {
+  color-scheme: dark;
+}
+
 .ss-scroll::-webkit-scrollbar {
   width: 8px;
   height: 8px;
 }
 .ss-scroll::-webkit-scrollbar-thumb {
-  background: #cbd5e1;
+  background: rgb(var(--c-line));
   border-radius: 99px;
 }

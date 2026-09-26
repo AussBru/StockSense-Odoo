@@ -84,23 +84,23 @@ export function ReturnFormPage() {
         <button
           type="button"
           onClick={() => navigate(-1)}
-          className="flex h-9 w-9 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-500 hover:bg-slate-50"
+          className="flex h-9 w-9 items-center justify-center rounded-lg border border-line bg-surface text-fg-muted hover:bg-surface-2"
         >
           <ArrowLeft size={16} />
         </button>
         <div>
-          <h1 className="text-2xl font-bold text-ink">
+          <h1 className="text-2xl font-bold text-fg">
             New {type === 'customer' ? 'Customer RMA Return' : 'Vendor Return'}
           </h1>
-          <p className="text-sm text-muted">Initiate an authorized return with automated inventory tracking.</p>
+          <p className="text-sm text-fg-muted">Initiate an authorized return with automated inventory tracking.</p>
         </div>
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-6">
         {error ? <div className="rounded-lg bg-rose-50 p-3.5 text-sm font-medium text-rose-700">{error}</div> : null}
 
-        <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-          <h2 className="mb-4 font-semibold text-ink">Return Parameters</h2>
+        <div className="rounded-2xl border border-line bg-surface p-6 shadow-sm">
+          <h2 className="mb-4 font-semibold text-fg">Return Parameters</h2>
           <div className="grid gap-4 sm:grid-cols-2">
             <Field label="Return Flow Type">
               <select
@@ -151,9 +151,9 @@ export function ReturnFormPage() {
         </div>
 
         {/* Lines Card */}
-        <div className="space-y-4 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+        <div className="space-y-4 rounded-2xl border border-line bg-surface p-6 shadow-sm">
           <div className="flex items-center justify-between">
-            <h2 className="font-semibold text-ink">Returned Items</h2>
+            <h2 className="font-semibold text-fg">Returned Items</h2>
             <button
               type="button"
               onClick={addLine}
@@ -167,10 +167,10 @@ export function ReturnFormPage() {
             {lines.map((line, idx) => (
               <div
                 key={line.id || idx}
-                className="grid grid-cols-12 items-center gap-2 rounded-xl border border-slate-100 bg-slate-50/50 p-3"
+                className="grid grid-cols-12 items-center gap-2 rounded-xl border border-line-soft bg-surface-2/50 p-3"
               >
                 <div className="col-span-12 sm:col-span-4">
-                  <span className="mb-1 block text-xs font-medium text-slate-500 sm:hidden">Product</span>
+                  <span className="mb-1 block text-xs font-medium text-fg-muted sm:hidden">Product</span>
                   <select
                     className={inputClass}
                     value={line.productId}
@@ -187,7 +187,7 @@ export function ReturnFormPage() {
                 </div>
 
                 <div className="col-span-4 sm:col-span-2">
-                  <span className="mb-1 block text-xs font-medium text-slate-500 sm:hidden">Qty</span>
+                  <span className="mb-1 block text-xs font-medium text-fg-muted sm:hidden">Qty</span>
                   <input
                     className={inputClass}
                     type="number"
@@ -199,7 +199,7 @@ export function ReturnFormPage() {
                 </div>
 
                 <div className="col-span-8 sm:col-span-3">
-                  <span className="mb-1 block text-xs font-medium text-slate-500 sm:hidden">Reason</span>
+                  <span className="mb-1 block text-xs font-medium text-fg-muted sm:hidden">Reason</span>
                   <input
                     className={inputClass}
                     placeholder="Reason (e.g. Defective)"
@@ -209,7 +209,7 @@ export function ReturnFormPage() {
                 </div>
 
                 <div className="col-span-10 sm:col-span-2">
-                  <span className="mb-1 block text-xs font-medium text-slate-500 sm:hidden">Destination</span>
+                  <span className="mb-1 block text-xs font-medium text-fg-muted sm:hidden">Destination</span>
                   <select
                     className={inputClass}
                     value={line.destination}
@@ -227,7 +227,7 @@ export function ReturnFormPage() {
                     type="button"
                     disabled={lines.length <= 1}
                     onClick={() => removeLine(idx)}
-                    className="p-1.5 text-slate-400 hover:text-rose-600 disabled:opacity-30"
+                    className="p-1.5 text-fg-subtle hover:text-rose-600 disabled:opacity-30"
                   >
                     <Trash2 size={16} />
                   </button>
@@ -239,7 +239,7 @@ export function ReturnFormPage() {
           <button
             type="button"
             onClick={addLine}
-            className="flex items-center gap-1.5 rounded-lg border border-dashed border-slate-300 px-3 py-2 text-xs font-semibold text-slate-600 hover:border-brand hover:text-brand"
+            className="flex items-center gap-1.5 rounded-lg border border-dashed border-line px-3 py-2 text-xs font-semibold text-fg-soft hover:border-brand hover:text-brand"
           >
             <Plus size={14} /> Add another line
           </button>
@@ -255,11 +255,11 @@ export function ReturnFormPage() {
           />
         </Field>
 
-        <div className="flex items-center justify-end gap-3 border-t border-slate-100 pt-4">
+        <div className="flex items-center justify-end gap-3 border-t border-line-soft pt-4">
           <button
             type="button"
             onClick={() => navigate(-1)}
-            className="rounded-lg border border-slate-200 px-4 py-2.5 text-sm font-semibold text-slate-600 hover:bg-slate-50"
+            className="rounded-lg border border-line px-4 py-2.5 text-sm font-semibold text-fg-soft hover:bg-surface-2"
           >
             Cancel
           </button>
